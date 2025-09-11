@@ -1,21 +1,21 @@
 [submodule "external/HighMap"]
 	path = external/HighMap
-	url = git@github.com:otto-link/HighMap.git
+	url = https://github.com/otto-link/HighMap.git
 [submodule "external/args"]
 	path = external/args
-	url = git@github.com:Taywee/args.git
+	url = https://github.com/Taywee/args.git
 [submodule "external/json"]
 	path = external/json
-	url = git@github.com:nlohmann/json.git
+	url = https://github.com/nlohmann/json.git
 [submodule "external/GNodeGUI"]
 	path = external/GNodeGUI
-	url = git@github.com:otto-link/GNodeGUI.git
+	url = https://github.com/otto-link/GNodeGUI.git
 [submodule "external/GNode"]
 	path = external/GNode
-	url = git@github.com:otto-link/GNode.git
+	url = https://github.com/otto-link/GNode.git
 [submodule "external/Attributes"]
 	path = external/Attributes
-	url = git@github.com:otto-link/Attributes.git
+	url = https://github.com/otto-link/Attributes.git
 [submodule "external/qt-toast"]
 	path = external/qt-toast
-	url = git@github.com:niklashenning/qt-toast.git
+	url = https://github.com/niklashenning/qt-toast.git
