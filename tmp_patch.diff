@@ -1,0 +1,43 @@
+*** Begin Patch
+*** Update File: hesiod_py/ui/main_window.py
+@@
+-        initial_doc = self._create_document(
+-            initial_controller=controller,
+-            initialize=controller is None,
+-            activate=True,
+-        )
+-        if controller is not None and controller.core_graph.name:
+-            initial_doc.manager.project = None  # type: ignore[attr-defined]
++        self._create_document(
++            initial_controller=controller,
++            initialize=controller is None,
++            activate=True,
++        )
+@@
+-        if initialize:
+-            project_name = name or self._untitled_name()
+-            manager.new_project(project_name)
+-        elif name is not None and manager.project is not None:
+-            with manager._suspend_dirty():  # type: ignore[attr-defined]
+-                manager.project.name = name
++        if initialize:
++            project_name = name or self._untitled_name()
++            manager.new_project(project_name)
+@@
+-            doc.manager.load_project(path)
+-        except Exception as exc:  # pragma: no cover - user interaction
+-            self._remove_document(doc, create_fallback=not self.documents)
++            doc.manager.load_project(path)
++        except Exception as exc:  # pragma: no cover - user interaction
++            self._remove_document(doc, create_fallback=False)
+@@
+-            report = doc.manager.import_legacy(path)
+-        except Exception as exc:  # pragma: no cover - user interaction
+-            self._remove_document(doc, create_fallback=not self.documents)
++            report = doc.manager.import_legacy(path)
++        except Exception as exc:  # pragma: no cover - user interaction
++            self._remove_document(doc, create_fallback=False)
+@@
+-        self._remove_document(doc, create_fallback=not self.documents)
++        self._remove_document(doc, create_fallback=True)
+*** End Patch

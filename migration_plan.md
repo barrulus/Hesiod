@@ -5,32 +5,15 @@
 - Guiding principles: maintain critical user workflows, favour pure-Python or widely supported libraries, keep the project buildable via standard Python packaging, and document each step to ease onboarding.
 - Workstreams: discovery, architecture, runtime porting, node migration, UI rebuild, mosaic tooling, QA and documentation.
 
-## Phase 0 - Discovery and Requirements Alignment
-Goal: capture the current feature surface, decide MVP scope, and define quality and performance targets for the Python rewrite.
-
-Sequential tasks:
-1. Inventory active user workflows, required node categories, and existing automation scripts by interviewing stakeholders and reviewing sample .hsd projects.
-2. Audit third-party dependencies (Qt, OpenCL, HighMap, GNode, and others) to decide which behaviours must be re-implemented, replaced, or can be deferred.
-3. Classify nodes into must-have, nice-to-have, and deprecated buckets; record rationale for every exclusion.
-4. Document performance, resource, and platform expectations such as target resolution, GPU or CPU requirements, and Windows or Linux parity.
-5. Produce a baseline risk register covering data fidelity, UI parity, and algorithmic gaps.
-6. Secure stakeholder sign-off on MVP scope, success criteria, and phased delivery timeline.
-
-Exit criteria:
-- Approved scope document with prioritised node list and functional requirements.
-- Agreed performance targets and supported platforms.
-- Risks logged with initial mitigation owners.
-
 ## Phase 1 - Architecture and Infrastructure Setup
 Goal: establish the Python repository structure, tooling, and design foundations needed for iterative development.
 
 Sequential tasks:
-1. Scaffold the Python package (for example, hesiod_py/) with subpackages for core, nodes, io, ui, plugins, and data.
-2. Adopt a build system (Poetry, uv, or Hatch) and define dependency constraints, linting (ruff or flake8), formatting (black), and type checking (mypy or pyright).
+1. Scaffold the Python package (for example, heatmapper/) with subpackages for core, nodes, io, ui, plugins, and data.
+2. Adopt a build system (uv) and define dependency constraints, linting (ruff), formatting (black), and type checking (pyright).
 3. Configure continuous integration to run linting, unit tests, and package builds on Windows and Linux.
 4. Specify configuration and serialization formats (JSON or YAML) and create shared utility modules for logging, configuration loading, and asset management.
-5. Draft high-level architecture diagrams covering runtime, UI, and mosaic builder components; review them with the team.
-6. Implement contributor documentation such as contributing guidelines, coding standards, and repository bootstrapping instructions.
+5. Draft high-level architecture diagrams covering runtime, UI, and mosaic builder components
 
 Exit criteria:
 - Python repository builds and passes lint or test in continuous integration.
@@ -102,7 +85,7 @@ Exit criteria:
 - Release candidate builds signed off, with maintenance roadmap agreed.
 
 ## Cross-Phase Governance
-- Maintain a living roadmap and burndown, updating phase deliverables as user feedback arrives.
+- Maintain a living roadmap and burndown called MIGRATION_ACTION.md, updating phase deliverables as user feedback arrives.
 - Review risks, assumptions, and mitigation actions at each phase gate.
 - Track technical debt, ensuring deferred items receive backlog entries with owners and due windows.
 

@@ -1,0 +1,79 @@
+[tool.poetry]
+name = "hesiod-py"
+version = "0.1.0"
+description = "Python runtime and tooling for Hesiod"
+readme = "README.md"
+authors = ["Hesiod Team <dev@hesiod.app>"]
+license = "Proprietary"
+packages = [
+  { include = "hesiod_py" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = ">=1.26,<3.0"
+loguru = "^0.7.2"
+pydantic = "^2.8.2"
+pillow = "^10.4.0"
+pyside6 = "^6.7.2"
+nodegraphqt = "^0.6.4"
+
+[tool.poetry.scripts]
+hesiod-ui = "hesiod_py.ui.app:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pytest-cov = "^5.0.0"
+ruff = "^0.6.3"
+black = "^24.8.0"
+mypy = "^1.11.1"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["hesiod_py", "tests"]
+extend-exclude = [
+  "external",
+  "Hesiod",
+  "scripts",
+  "docs",
+  ".github",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "UP",
+  "B",
+  "ANN",
+  "RUF"
+]
+ignore = ["ANN101", "ANN102"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN201", "ANN202"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+ignore_missing_imports = false
+packages = ["hesiod_py"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --cov=hesiod_py --cov-report=term-missing"
+testpaths = ["tests"]
+
+[build-system]
+requires = ["poetry-core>=1.7.0"]
+build-backend = "poetry.core.masonry.api"

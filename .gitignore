@@ -3,3 +3,4 @@
 bin/
 build/
 launch.json
+.venv/

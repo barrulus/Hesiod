@@ -242,3 +242,7 @@ nav:
     - 'node_reference/nodes/ZeroedEdges.md'
     - 'node_reference/nodes/Zoom.md'
 
+  - "Architecture":
+    - "architecture/python_runtime.md"
+  - "Development":
+    - "development/python_contributor_guide.md"
