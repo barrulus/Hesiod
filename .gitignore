@@ -6,3 +6,10 @@ build/
 launch.json
 .idea/
 .vscode/
+.venv/
+__pycache__/
+*.pyc
+.direnv/
+.envrc.local
+result
+result-*
