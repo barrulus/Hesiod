@@ -57,9 +57,9 @@ A `Broadcast` node publishes `(tag, its frame, its data)`. A `Receive` node in
 overlap of the two frames**. So two frames that touch or overlap read the *exact
 same field* across the boundary — that is what makes the seam seamless.
 
-> **Direction is one-way.** Broadcasts only reach graphs that are **higher in
-> the layer list**. So your shared/base layer must sit at the **bottom** of the
-> list, and the per-region tiles sit above it.
+> **Direction is one-way.** Broadcasts only reach graphs that are **lower in
+> the layer list** (below the broadcaster). So your shared/base layer must sit at
+> the **top** of the list, and the per-region tiles sit below it.
 
 ### c. Export stitches all frames into one image
 
@@ -83,13 +83,13 @@ Open it with **View -> Graph Layout Manager**.
  +======================================================================+
  |  Hesiod - GraphManager                                          _ [] X |
  +----------------------------------+-----------------------------------+
- |                                  |  Graph list (TOP = upper layer)   |
+ |                                  |  Graph list (BOTTOM = upper layer)|
  |        FRAME CANVAS              | +-------------------------------+ |
- |   (world space, Y points UP)     | | tile_03   [bg-tag v]  [thumb] | |
- |                                  | | tile_02   [bg-tag v]  [thumb] | |
+ |   (world space, Y points UP)     | | base      [bg-tag v]  [thumb] | |
+ |                                  | | tile_00   [bg-tag v]  [thumb] | |
  |    +--------+ +--------+         | | tile_01   [bg-tag v]  [thumb] | |
- |    |tile_00 | |tile_01 |        <--->| tile_00   [bg-tag v]  [thumb] | |
- |    +--------+ +--------+         | | base      [bg-tag v]  [thumb] | |
+ |    |tile_00 | |tile_01 |        <--->| tile_02   [bg-tag v]  [thumb] | |
+ |    +--------+ +--------+         | | tile_03   [bg-tag v]  [thumb] | |
  |    |  base (spans everything) |  | +-------------------------------+ |
  |    +-----------------------+    |                                   |
  |                                  | [ New ] [ Zoom ] [Flatten/export]|
@@ -99,7 +99,7 @@ Open it with **View -> Graph Layout Manager**.
 
 - **Left = frame canvas.** Each rectangle is a graph. **Drag** to move, **mouse
   wheel** to zoom, **left-drag empty space** to pan. The Y axis points **up**.
-- **Right = ordered layer list.** **Top of the list = top layer.** Drag rows to
+- **Right = ordered layer list.** **Bottom of the list = top layer.** Drag rows to
   reorder. Each row has a **background-tag combobox** — this selects which output
   that graph contributes to the export.
 - **New** — add a graph. **Zoom** — fit all frames in view. **Flatten/export** —
@@ -185,7 +185,14 @@ middle and dark at top/bottom.
 | Node | What it is for | What to set |
 |------|----------------|-------------|
 | **Wave Sine** (`wave_sine`) | Makes a single bright horizontal band down the middle (dark at top & bottom) = your "stay away from the poles" mask. | **angle** = `90`, **kw** = `0.5`. Tune until only the middle is bright. |
-| **Blend** (`blend`) | Multiplies the terrain by the mask, so the poles get pushed down to ocean. | **blending_method** = `multiply`. Connect terrain to `input 1`, Wave Sine to `input 2`. |
+| **Blend** (`blend`) | Multiplies the terrain by the mask, so the poles get pushed down to ocean. | **blending_method** = `multiply`. Connect your **terrain** (the `Make Periodic` output - i.e. the land field built so far) to `input 1`, and **Wave Sine** to `input 2`. |
+
+> **"Terrain" = your land field, not a node named Terrain.** Up to this point that
+> wire is the `Make Periodic` output (Noise FBM, plus any hand-placed continents
+> from Part 4). The mask must be bright in the **middle** and dark at **both** top
+> and bottom; if your Wave Sine preview is a one-sided gradient, tune `kw`/`angle`
+> until you see a bright horizontal band with dark poles - otherwise one pole gets
+> boosted instead of sunk.
 
 #### Part 4 — Hand-place continents (optional - the per-landmass control)
 
@@ -237,7 +244,7 @@ For each landmass/region you want to author separately:
 
 1. **New** -> name it `tile_00`, `tile_01`, ... Give tiles a **square** pixel
    shape (e.g. `1024×1024`).
-2. **Keep tiles above `base` in the list** (drag if needed). Above = can receive
+2. **Keep tiles below `base` in the list** (drag if needed). Below = can receive
    from base.
 3. In the tile's editor, drop a **`Receive`** node and pick the base's **tag**
    from its dropdown:
@@ -333,15 +340,15 @@ Design these in deliberately — the engine will not add them for you.
 
 ```
    LAYER LIST                     WORLD                         BROADCAST FLOW
-   (top = upper)
+   (bottom = upper)
  +-----------+
- | tile_07   |   detail ----.     [ tiles read base in        tiles can receive
- |   ...     |              |       their own footprint ]      from base (below)
- | tile_00   |   detail ----+                                          ^
- +-----------+              |                                          |
  | base      |   continents + periodic-X + pole mask --> Broadcast ----+
- +-----------+   (spans the full 2:1 world; bottom of the list)
+ +-----------+   (spans the full 2:1 world; top of the list)           |
+ | tile_00   |   detail ----.                                          |
+ |   ...     |              |     [ tiles read base in        tiles can receive
+ | tile_07   |   detail ----+       their own footprint ]     from base (above)
+ +-----------+                                                         v
 ```
 
-Keep `base` at the **bottom**. Tiles above it receive; the export flattens all
+Keep `base` at the **top**. Tiles below it receive; the export flattens all
 frames into one 2:1 image.
