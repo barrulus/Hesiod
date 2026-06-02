@@ -15,7 +15,7 @@
 	url = https://github.com/otto-link/Attributes.git
 [submodule "external/QTerrainRenderer"]
 	path = external/QTerrainRenderer
-	url = https://github.com/otto-link/QTerrainRenderer.git
+	url = https://github.com/barrulus/QTerrainRenderer.git
 [submodule "external/QTextureDownloader"]
 	path = external/QTextureDownloader
 	url = https://github.com/otto-link/QTextureDownloader.git
