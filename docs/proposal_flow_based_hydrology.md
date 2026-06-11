@@ -215,7 +215,139 @@ Precipitation ──────────────────────
 
 ---
 
-## 5. Visual representation — the main subject
+## 5. Fresh input — runevision's "Fast and Gorgeous Erosion Filter" (March 2026)
+
+Rune Skovbo Johansen (runevision) published a detailed write-up of a new
+erosion technique — blog post
+([blog.runevision.com](https://blog.runevision.com/2026/03/fast-and-gorgeous-erosion-filter.html))
+plus a companion video — building on Clay John's 2018 *Eroded Terrain Noise*
+and Felix Westin's (Fewes) 2023 Shadertoys. It is worth folding into this
+proposal because it sits at the exact intersection of the two paradigms in
+§1, and one of its outputs is directly useful to the hydrology pipeline.
+
+### 5.1 What it is
+
+> *"It's essentially a special kind of noise which produces gorgeous
+> branching gullies and ridges, while still allowing every point to be
+> evaluated in isolation, which means it's fast, GPU-friendly, and trivial
+> to generate in chunks. Furthermore, rather than defining the landscape
+> entirely, it can be applied on top of any height function, essentially
+> applying erosion on top as a filter."*
+
+The mechanism, compactly:
+
+- **Gradient-aligned stripe noise.** Stripes (cosine wave for height offset,
+  sine wave for slope) are oriented along the negative gradient of the input
+  height function — the direction water would flow. Each octave's gullies
+  modify the combined gradient, so the next (smaller) octave's gullies
+  branch off at an angle: a *dendritic pattern without any simulation*.
+- **Per-cell pivots, Worley-style.** To rotate stripes without large
+  distortion, the domain is divided into grid cells each with a random pivot
+  point; neighbouring cells' stripes are blended (blending unaligned sine
+  waves just yields a smaller-amplitude sine wave, so the blend is seamless).
+- **The "fade approach".** Where the slope approaches zero (peaks, valleys),
+  stripes are faded towards a user-supplied **fade target** in [-1, 1]
+  (−1 at valleys, +1 at peaks, typically derived from altitude). This gives
+  crisp pointy peaks *and* crisp V-shaped valleys simultaneously — fixing
+  the valley-bulge artifact of the original "frequency approach".
+- **Slope shaping function.** Erosion magnitude uses
+  `1 − (1 − slope)²` (an ease-out) instead of `slope^0.5` — the square-root
+  curve's vertical start caused visible discontinuities at peaks/valleys.
+  (Directly relevant to the thread: this is the same lever as the "drainage
+  exponent" tuning Otto suggested for `HydraulicSaleve`.)
+- **Stacked fading.** After each octave, the mask and fade target are
+  updated so subsequent smaller gullies are faded out *on the ridges and
+  creases of larger ones* — this is what keeps large-scale ridgelines crisp
+  and unbroken, with a single `detail` parameter
+  (`combiMask = pow_inv(combiMask, detail) * newMask`) controlling how far
+  high-frequency gullies are confined to steep slopes.
+- **Normalized gullies** (released separately as *Phacelle Noise*): the
+  interpolated cosine/sine pair is treated as a point on a unit circle and
+  re-normalized (above a 0.5-length threshold, scale ×2 then clamp) for
+  consistent gully magnitude without loop/spike artifacts.
+- **Straight gullies:** for direction computation, the gully slope uses the
+  *sign* of the sine wave (as if gullies were extruded triangle waves), so
+  tributary gullies branch off cleanly instead of curling along their
+  parents.
+- Extras: a *gully weight* factor for pointy peaks, separate **ridge and
+  crease rounding** (sediment-filled valley bottoms vs. weathered ridges),
+  and approximate analytical derivatives as a secondary output.
+
+### 5.2 Why it matters to this proposal
+
+**1. It is the tileable half of the equation.** The whole point of the
+technique is point-in-isolation evaluation: it fits Hesiod's
+`for_each_tile` + GPU compute model *perfectly*, including chunked
+generation of world-scale maps (the equirectangular wrap-around use case
+from the thread). This is the exact opposite of flow accumulation, which is
+global and forces `cm_single_array`. The two paradigms slot together rather
+than compete:
+
+> **flow graph = global connectivity and topology** (rivers guaranteed to
+> reach the sea, lakes with spill, Strahler order, discharge);
+> **runevision filter = local, fast, crisp gully/ridge detail** at
+> resolutions and chunk sizes where a global pass is impractical.
+
+**2. Its admitted limitation is precisely the thread's complaint.** From the
+post, on drawing drainage streaks from the technique alone:
+
+> *"It's not a perfect solution, since the interpolated stripes we use for
+> the gullies cannot consistently produce unbroken lines. So sometimes a
+> gully, and the drawn water drainage at its bottom, just stops halfway
+> down a mountainside rather than following through all the way down to the
+> lowest reachable point."*
+
+That is the "rivers fade away before they hit the sea" problem, stated as a
+structural property of *any* purely local technique. It is independent
+confirmation that connectivity must come from a global flow pass (§4 b),
+while appearance can come from local filtering.
+
+**3. The ridge map is a free drainage visualization.** The technique's
+internal *fade target*, after all octaves (with the last octave faded to
+neutral), is what Rune calls a **ridge map**: ridges in white, creases in
+black — effectively an analytical map of every gully bottom. He uses it to
+draw bright dendritic drainage streaks on the textured terrain at zero
+simulation cost. For Hesiod this is a ready-made texture channel (see
+Channel B below) and could also serve as a *prior* for the flow pass — e.g.
+blended into the precipitation input, or used to seed `FlowStream` sources
+at detected creases.
+
+**4. A hybrid pipeline becomes the natural architecture.**
+
+```
+                    ┌─ global, single-array, coarse-to-mid res ─────────────┐
+Heightmap ─────────→│ DepressionFilling → FlowAccumulation(precip) →        │→ trunk rivers, lakes,
+                    │ StreamOrder → lake fill & spill                       │  discharge, water_depth
+                    └───────────────────────────────────────────────────────┘
+                    ┌─ local, tiled, GPU, full res ─────────────────────────┐
+        + ─────────→│ runevision-style erosion filter                       │→ crisp gullies/ridges,
+                    │ (strength & fade target modulated by discharge map)   │  ridge map (drainage streaks)
+                    └───────────────────────────────────────────────────────┘
+```
+
+Modulating the filter's erosion strength / fade target / detail by the
+discharge map means gully density and depth *correlate with actual
+drainage* — the local detail visually agrees with the global network. This
+is also a more principled take on what `HydraulicStreamUpscaleAmplification`
+gestures at today: global structure at low resolution, amplified locally.
+
+**5. Implementation is realistic.** The code is released under **MPL-2.0**
+(compatible with Hesiod's GPLv3), with reference Shadertoys (*Advanced
+Terrain Erosion Filter*, *Mouse-Paint Eroded Mountains*, *Phacelle Noise*),
+and has already been ported to Unity (Burst and Shadergraph), Unreal, Godot,
+Blender geometry nodes, Houdini, and the Leveller heightmap tool. Notably,
+when a commenter asked for *"an application where I can apply this filter to
+a heightmap and export the new heightmap"*, Rune replied that none exists
+yet — *"maybe as plugins to existing applications"*. Hesiod is arguably the
+most natural home for exactly that: a node (working title
+`HydraulicGully` / `ErosionFilter`) alongside `HydraulicProcedural`, with
+`fade_target`, `mask`, and `detail` as input ports — the technique's
+parameter design (user-supplied fade target map, per-point evaluation) maps
+one-to-one onto Hesiod's port model.
+
+---
+
+## 6. Visual representation — the main subject
 
 Visualization turns out to be the *easy* half: Hesiod already moves and
 renders every data channel a flow-hydrology system needs. Everything that
@@ -275,6 +407,14 @@ texture:
 Needs only a small "colorize + blend by mask" node chain — all primitives
 exist.
 
+If a runevision-style erosion filter node is added (§5), its **ridge map**
+output slots straight into this channel: bright dendritic drainage streaks
+at every gully bottom, analytically derived at full tiled resolution. The
+flow-derived discharge tint provides the *connected* trunk network; the
+ridge-map streaks provide the fine capillary texture between them — the two
+composite naturally because the filter's gullies are slope-aligned with the
+same terrain the flow pass routed over.
+
 ### Channel C — vector overlay *(the Strahler payoff; the one new piece)*
 
 A river *network as a graph* is naturally a `Path` (one polyline per reach)
@@ -322,7 +462,7 @@ Precip ────┘         │                                ├─→ wate
 
 ---
 
-## 6. Suggested order of implementation
+## 7. Suggested order of implementation
 
 | Step | Effort | New rendering? | Payoff |
 |---|---|---|---|
@@ -333,14 +473,18 @@ Precip ────┘         │                                ├─→ wate
 | 5. Blue-ramp colorize/blend chain | trivial | no | cartographic map view (Channel B) |
 | 6. `RiverNetwork` type + `Path`/`Cloud` extraction | large | thumbnails free | named rivers, meanders, vector export |
 | 7. `Path`/`Cloud` overlay in 2D/3D viewers | medium | **yes** (the only new viewer work) | Strahler-weighted vector map (Channel C) |
+| 8. Runevision-style erosion filter node (§5) — fully independent of 1–7, can proceed in parallel | medium | no (ridge map feeds Channel B) | tiled/GPU gully detail; drainage-streak ridge map; hybrid with discharge modulation |
 
 Steps 1–3 alone resolve every visual complaint raised in the Discord thread,
 using rendering that already ships. Steps 4–7 add the cartographic and
-vector layers that close the gap with FMG-class output.
+vector layers that close the gap with FMG-class output. Step 8 is
+orthogonal — a tileable appearance layer that the flow pass can modulate —
+and is the only step that could be picked up independently of all the
+others.
 
 ---
 
-## 7. References
+## 8. References
 
 - Horton, R. E. (1945) — *Erosional development of streams and their
   drainage basins.*
@@ -351,3 +495,11 @@ vector layers that close the gap with FMG-class output.
 - Azgaar's Fantasy Map Generator — `rivergenerator.ts`, `lakes.ts`,
   `biomes.ts` (reference implementation of the on-top flow-graph model).
 - HighMap — `highmap/hydrology/hydrology.hpp` (existing flow primitives).
+- Rune Skovbo Johansen (2026) — *Fast and Gorgeous Erosion Filter*,
+  https://blog.runevision.com/2026/03/fast-and-gorgeous-erosion-filter.html
+  (point-evaluated, tileable erosion-as-noise filter; ridge map; MPL-2.0
+  reference Shadertoys: *Advanced Terrain Erosion Filter*, *Mouse-Paint
+  Eroded Mountains*, *Phacelle Noise*).
+- Clay John (2018) — *Eroded Terrain Noise* (Shadertoy; original version of
+  the technique); Felix Westin / Fewes (2023) — *Terrain Erosion Noise*
+  (Shadertoy refinement).
