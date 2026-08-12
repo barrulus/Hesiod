@@ -573,30 +573,113 @@ migration-correctness failure.
 # Fix stack — deferred until the GUI pass completes
 
 Fixes were **stacked, not applied mid-test**, so the binary under test stayed constant
-across G1-G10. **The pass is complete (2026-08-03) — this stack is now ready to apply**, in
-this order. Nothing below is committed. Note the split across three repos: 9a is QTR;
-6, 7a, 7b, 8a, 8b, 11a, 11b, 11c and 12 are Meta; the rest are Hesiod — so separate commits
-plus submodule bumps.
+across G1-G10. **The pass is complete (2026-08-03).** Note the split across three repos:
+9a is QTR; 6, 7a, 7b, 8a, 8b, 11a, 11b, 11c and 12 are Meta; the rest are Hesiod.
 
-| # | Finding | Site | Fix |
-|:-:|---|---|---|
-| 6 | Histogram frozen after drag | `glm_vec2.inl:468-471` | re-pull the provider in the `drag_ended` handler, after `edit_ended` |
-| 8a | `valueChanged(double)` → `int` truncation | `int.inl:73-76` | take `double v`, round explicitly |
-| 8b | Display-only clamp desyncs widget from model | `int.inl:61` | write the clamped value back to the attribute |
-| 8c | Seed `uint` → `int` narrowing goes negative ≥ 2^31 | `legacy_compat.hpp:343` | widen storage or clamp at the cast |
-| 7a | "Center" centres on 0, not the domain midpoint | `glm_vec2.inl:494` | restore `(min + max) * 0.5f`; agree with `glm_vec2.inl:215` |
-| 7b | "Center" is a dead button at full span | `glm_vec2.inl:486-501` | disable when `span >= max - min` |
-| 2 | `register_builtin_types()` never called | Hesiod startup | one line, or make Meta self-register lazily |
-| 3 | Stale `_TEXT_`/`_SEPARATOR_` ordered keys | facade `finalize_attributes` | drop or map the legacy layout pseudo-keys |
-| 4 | `island.cpp:37` `INT_MAX` lands in `vmin` | `island.cpp:37` | `8, 1, 32` |
-| 1 | 9-button toolbar pins panel at 309px | `NodeAttributesWidget::create_toolbar()` | wrap the row, or overflow behind a `⋯` menu |
-| **9a** | **ImGui raw `glDelete*` with no context current** | `render_widget.cpp:65-76` (QTR) | `makeCurrent()`/`doneCurrent()` around the ImGui shutdown |
-| **9b** | **Deferred viewer delete lands mid-construction of the new one** | `graph_node_widget.cpp:241-253` | destroy synchronously, not `deleteLater()` |
-| 10 | New viewport starts grey until a node is selected | `graph_node_widget.cpp:1311-1314` | seed from the current viewer/pinned node |
-| 11a | Histogram bins ignore `hist_x_` — drawn uniformly across the full width while the handles map through `value_to_canvas` over `[min,max]` | `range_bar.cpp:161-184` | map each bin by `value_to_canvas(hist_x_[i])`; the two must share one mapping |
-| 11c | Histogram drawn in `QPalette::Mid` (= `colors.border`) at alpha 90, then overpainted by the track in the same colour at full alpha | `range_bar.cpp:174-175`, `:195` | give it its own role (`Text`, or a desaturated `Highlight`), raise the alpha, and draw it *after* the track |
-| 11b | Empty provider result is indistinguishable from a broken widget | `glm_vec2.inl:276-288` + `saturate.cpp:70-71` | draw a "no data / flat input" hint instead of nothing |
-| 12 | `AttributeContainer::compact_insertion_order()` calls `attributes_.clear()` — destroys every attribute | `attribute_container.cpp:45` | delete the line; compare `ContainerGroup::compact_insertion_order` (`container_group.cpp:35-45`), which is correct |
+## Status re-check, 2026-08-12
+
+Every row below was re-read against `dev` at `8375dfc6` (Meta integration + GNode event
+system merged; Meta at `8a890d1`, QTR at `903a10d3`). **Five are fixed, two are moot
+because the site was deleted, nine are still live, one needs an empirical re-test.**
+Line numbers in the *Site* column are as-written on 2026-08-03 and have drifted — the
+re-check located each site by content, and current lines are given in the status notes.
+
+Issues filed 2026-08-12 for the six live findings worth tracking: **Meta#22** (2),
+**Meta#23** (11a/11c, 11b as a note), **Meta#24** (8a/8b), **Meta#25** (7a/7b).
+The rest stay recorded here only.
+
+| # | Status | Finding | Site | Fix |
+|:-:|:-:|---|---|---|
+| 6 | **FIXED** | Histogram frozen after drag | `glm_vec2.inl:468-471` | re-pull the provider in the `drag_ended` handler, after `edit_ended` |
+| 8a | **LIVE** | `valueChanged(double)` → `int` truncation | `int.inl:73-76` | take `double v`, round explicitly |
+| 8b | **LIVE** | Display-only clamp desyncs widget from model | `int.inl:61` | write the clamped value back to the attribute |
+| 8c | *moot* | Seed `uint` → `int` narrowing goes negative ≥ 2^31 | `legacy_compat.hpp:343` | widen storage or clamp at the cast |
+| 7a | **LIVE** | "Center" centres on 0, not the domain midpoint | `glm_vec2.inl:494` | restore `(min + max) * 0.5f`; agree with `glm_vec2.inl:215` |
+| 7b | **LIVE** | "Center" is a dead button at full span | `glm_vec2.inl:486-501` | disable when `span >= max - min` |
+| 2 | **LIVE** | `register_builtin_types()` never called | Hesiod startup | one line, or make Meta self-register lazily |
+| 3 | *moot* | Stale `_TEXT_`/`_SEPARATOR_` ordered keys | facade `finalize_attributes` | drop or map the legacy layout pseudo-keys |
+| 4 | **FIXED** | `island.cpp:37` `INT_MAX` lands in `vmin` | `island.cpp:37` | `8, 1, 32` |
+| 1 | **LIVE** | 9-button toolbar pins panel at 309px | `NodeAttributesWidget::create_toolbar()` | wrap the row, or overflow behind a `⋯` menu |
+| **9a** | **FIXED** | **ImGui raw `glDelete*` with no context current** | `render_widget.cpp:65-76` (QTR) | `makeCurrent()`/`doneCurrent()` around the ImGui shutdown |
+| **9b** | *retest* | **Deferred viewer delete lands mid-construction of the new one** | `graph_node_widget.cpp:241-253` | destroy synchronously, not `deleteLater()` |
+| 10 | **FIXED** | New viewport starts grey until a node is selected | `graph_node_widget.cpp:1311-1314` | seed from the current viewer/pinned node |
+| 11a | **LIVE** | Histogram bins ignore `hist_x_` — drawn uniformly across the full width while the handles map through `value_to_canvas` over `[min,max]` | `range_bar.cpp:161-184` | map each bin by `value_to_canvas(hist_x_[i])`; the two must share one mapping |
+| 11c | **LIVE** | Histogram drawn in `QPalette::Mid` (= `colors.border`) at alpha 90, then overpainted by the track in the same colour at full alpha | `range_bar.cpp:174-175`, `:195` | give it its own role (`Text`, or a desaturated `Highlight`), raise the alpha, and draw it *after* the track |
+| 11b | **LIVE** | Empty provider result is indistinguishable from a broken widget | `glm_vec2.inl:276-288` + `saturate.cpp:70-71` | draw a "no data / flat input" hint instead of nothing |
+| 12 | **FIXED** | `AttributeContainer::compact_insertion_order()` calls `attributes_.clear()` — destroys every attribute | `attribute_container.cpp:45` | delete the line; compare `ContainerGroup::compact_insertion_order` (`container_group.cpp:35-45`), which is correct |
+
+### Status notes (2026-08-12)
+
+**Fixed**
+
+- **6** — fixed by a *different* route than proposed: the sync lambda now re-pulls the
+  provider guarded on `!widget->is_editing()` (`glm_vec2.inl:335-342`), rather than in
+  `drag_ended`. Reasoned from the code path; **still wants a GUI confirmation**.
+- **4** — `island.cpp:96` is now `add_int(node, …, 8, 0, INT_MAX)`. The signature is
+  `(default, vmin, vmax)`, so `INT_MAX` sits in *vmax*. The arg-order bug is gone; `vmin`
+  is 0 rather than the suggested 1, which is cosmetic.
+- **9a** — `~RenderWidget` wraps `ImGui_ImplOpenGL3_Shutdown()` in
+  `makeCurrent()`/`doneCurrent()` (`render_widget/render_widget.cpp:86-91`), with an
+  explanatory comment. Landed via QTR PR #22/#23.
+- **10** — `graph_node_widget.cpp:1312-1315` seeds a new viewer from
+  `get_selected_node_ids().back()`.
+- **12** — `attributes_.clear()` is gone; the method now only erases stale
+  `insertion_order_` entries.
+
+**Moot — site deleted by the migration**
+
+- **3** — no `_TEXT_`/`_SEPARATOR_` pseudo-keys remain anywhere in Hesiod. Died with the
+  facade.
+- **8c** — `legacy_compat.hpp` was deleted; seed is `Attribute<int>` end-to-end with a min
+  of 0. **The narrowing was relocated, not demonstrably fixed** — a legacy file carrying a
+  seed ≥ 2^31 still has to survive `get<int>`. Needs a targeted large-seed test before
+  this is called closed.
+
+**Still live** (current lines)
+
+- **1** — still nine buttons in `create_toolbar()` (`node_attributes_widget.cpp:55-63`),
+  no wrap or overflow.
+- **2** — re-confirmed independently on 2026-08-12. → **Meta#22**
+- **7a** — `glm_vec2.inl:424` reads `const float mid = 0.f; // (min + max) * 0.5f;` — the
+  fix is present but commented out, and still disagrees with the `XYCanvas` Center at
+  `:216`. → **Meta#25**
+- **7b** — no `span >= max - min` guard. → **Meta#25**
+- **8a** — `QDoubleSpinBox::valueChanged` (a `double` signal) is still connected to a
+  lambda taking `int v`; the conversion is implicit and truncates. → **Meta#24**
+- **8b** — the initial `setValue(std::clamp(...))` is still display-only; the model keeps
+  its out-of-range value. → **Meta#24**
+- **11a** — `hist_x_` is stored (`range_bar.cpp:258`) but never read in `paintEvent`; bins
+  remain uniform at `r.left() + i * bw`. → **Meta#23**
+- **11c** — histogram still `QPalette::Mid` @ alpha 90, with the track drawn *after* it in
+  the same role at full alpha (`range_bar.cpp:196`). → **Meta#23**
+- **11b** — empty provider still draws nothing, with no hint. → noted in **Meta#23**
+
+**Needs an empirical re-test rather than a verdict**
+
+- **9b** — `p_viewer->deleteLater()` at `graph_node_widget.cpp:243` is unchanged. But
+  Hesiod #537 was closed on 2026-08-03 via QTR #22/#23 + Hesiod #647, so the crash was
+  most likely resolved through 9a rather than by removing the deferred delete. Whether the
+  flagged code still bites is an open question.
+
+### Found after this matrix (2026-08-12, testing `dev` at `8375dfc6`)
+
+Two crashes, both root-caused from core dumps and fixed in Hesiod PR #658:
+
+- **Use-after-free deleting a node with an update in flight.** `NodeAttributesWidget`
+  posts a queued `sync_from_model` from `post_update_event`; deleting the node before
+  delivery leaves Meta's widget callbacks dereferencing a freed `AttributeContainer`
+  (`this=0xababffff00000001`, key `"LinkedSliders.locked_xy"`). Guarded on delivery, as
+  `DataPreview::update_preview` already does. Repro: `Noise` → `Rifts`, delete `Rifts`
+  while selected.
+- **Segfault loading any project with a painted Brush.** The legacy `Array` converter
+  emitted flat `"shape.x"`/`"shape.y"`, but `meta::Array::json_from` reads a nested
+  `"shape"` object — so shape stayed `{0, 0}` and the vector was silently discarded. The
+  empty array then hit `std::clamp(is0, 0, -1)` (UB, returns `-1`) in
+  `interpolate_array_bilinear`. Repro: open `stress/g10.hsd`.
+
+Still open from that session: `interpolate_array_bilinear` faults on *any* zero-sized
+source and wants a defensive guard in HighMap; `compute_brush_node` doesn't sanity-check
+its array, so a never-painted Brush may reach the same path.
 
 9a and 9b are the priority — 9 is a deterministic, user-visible break of the core
 project-switch workflow, and it is the only finding so far that G8 was specifically
