@@ -669,7 +669,15 @@ void GraphNodeWidget::on_new_graphics_node_request(const std::string &node_id,
 
   this->add_node(p_proxy, scene_pos, node_id);
   if (auto *gn = this->get_graphics_node_by_id(node_id))
+  {
     gn->set_widget(widget);
+
+    // panning and dragging then move cached images instead of painting every
+    // node and its embedded widgets again on each frame
+    gn->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+    for (QGraphicsItem *child : gn->childItems())
+      child->setCacheMode(QGraphicsItem::DeviceCoordinateCache);
+  }
 }
 
 std::string GraphNodeWidget::on_new_node_request(const std::string &node_type,
