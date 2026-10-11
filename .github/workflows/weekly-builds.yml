@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: weekly-builds
+  group: weekly-builds-${{ github.event_name == 'push' && github.sha || 'publication' }}
   cancel-in-progress: false
 
 jobs:
@@ -62,6 +62,9 @@ jobs:
           persist-credentials: false
       - uses: jurplel/install-qt-action@v4
         with:
+          # aqt 3.3.0 cannot resolve Qt 6.11's Windows download layout.
+          # Pin the upstream fix until it appears in a released aqt version.
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b
           version: '6.11.2'
           arch: ${{ matrix.qt-arch }}
           modules: qtwebengine qtpositioning qtwebchannel qtserialport
