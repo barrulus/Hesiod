@@ -141,44 +141,45 @@ void compute_seed_forest_node(BaseNode &node)
   const auto exclusion_threshold   = node.val<float>(A_EXCLUSION_THRESHOLD);
   // clang-format on
 
-  // --- Convert inputs to full arrays
-
-  hmap::Array elev_array = p_elevation->to_array(node.cfg().cm_cpu);
-
-  hmap::Array secondary_array;
-  if (p_secondary)
-    secondary_array = p_secondary->to_array(node.cfg().cm_cpu);
-
-  hmap::Array exclusion_array;
-  if (p_exclusion)
-    exclusion_array = p_exclusion->to_array(node.cfg().cm_cpu);
-
   // --- Talus Computation from Slope
 
-  const float shape_x   = std::max(1.0f, static_cast<float>(elev_array.shape.x));
+  const float shape_x   = std::max(1.0f, static_cast<float>(p_elevation->shape.x));
   const float min_talus = min_slope / shape_x;
   const float max_talus = max_slope / shape_x;
 
   // --- Build Tree Density Map
 
-  hmap::Array density_array = hmap::build_tree_density(elev_array,
-                                                       min_elev,
-                                                       max_elev,
-                                                       elev_transition_width,
-                                                       min_talus,
-                                                       max_talus,
-                                                       angle,
-                                                       angle_width,
-                                                       weight_elev,
-                                                       weight_talus,
-                                                       weight_angle,
-                                                       weight_twi,
-                                                       secondary_array,
-                                                       weight_secondary,
-                                                       exclusion_array);
+  hmap::for_each_tile(
+      {p_elevation, p_secondary, p_exclusion},
+      {p_out_density},
+      [&](std::vector<const hmap::Array *> p_arrays_in,
+          std::vector<hmap::Array *>       p_arrays_out,
+          const hmap::TileRegion &)
+      {
+        auto [pa_elevation, pa_secondary, pa_exclusion] = unpack<3>(p_arrays_in);
+        auto [pa_density]                               = unpack<1>(p_arrays_out);
 
-  if (p_out_density)
-    p_out_density->from_array(density_array, node.cfg().cm_cpu);
+        static const hmap::Array empty_array;
+        const auto              &secondary = pa_secondary ? *pa_secondary : empty_array;
+        const auto              &exclusion = pa_exclusion ? *pa_exclusion : empty_array;
+
+        *pa_density = hmap::build_tree_density(*pa_elevation,
+                                               min_elev,
+                                               max_elev,
+                                               elev_transition_width,
+                                               min_talus,
+                                               max_talus,
+                                               angle,
+                                               angle_width,
+                                               weight_elev,
+                                               weight_talus,
+                                               weight_angle,
+                                               weight_twi,
+                                               secondary,
+                                               weight_secondary,
+                                               exclusion);
+      },
+      node.cfg().cm_cpu);
 
   // --- Seed Forest
 
@@ -204,22 +205,27 @@ void compute_seed_forest_node(BaseNode &node)
 
   // --- Spawn forest
 
-  *p_out_forest = hmap::seed_forest_clusters(species_count,
-                                             tree_count,
-                                             density_array,
-                                             exclusion_array,
-                                             cluster_spread,
-                                             points_per_cluster,
-                                             options);
+  hmap::VirtualArray empty_va;
+  const auto        &exclusion_va = p_exclusion ? *p_exclusion : empty_va;
+
+  *p_out_forest = hmap::va::seed_forest_clusters(species_count,
+                                                 tree_count,
+                                                 *p_out_density,
+                                                 exclusion_va,
+                                                 cluster_spread,
+                                                 points_per_cluster,
+                                                 options,
+                                                 node.cfg().cm_cpu);
 
   *p_out_forest = hmap::grow_forest_iterative(*p_out_forest,
                                               options.species,
                                               /* iterations */ 15,
                                               0.1f,
                                               hmap::InteractionMatrix{},
-                                              density_array,
+                                              hmap::Array{}, // TODO VA version
                                               0.8f);
 
+  hmap::Array elev_array = p_elevation->to_array(node.cfg().cm_cpu);
   p_out_forest->set_elevation_from_terrain(elev_array);
 }
 
