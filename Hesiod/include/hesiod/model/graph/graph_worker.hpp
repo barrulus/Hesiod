@@ -82,6 +82,10 @@ private:
   void                      schedule_start_next();
   void                      start_next(); // unless an update is in progress
 
+  // the node after this one gets ready while it is computed
+  void prepare_after(int pass, const std::string &node_id);
+  void prepare_next(const std::string &node_id); // with the mutex held
+
   // GUI thread
   std::deque<Job>            jobs;    // one per graph, in request order
   std::shared_ptr<GraphNode> graph;   // being updated
@@ -98,6 +102,7 @@ private:
   std::condition_variable cv;
   bool                    cancelled = false;
   bool                    go = false;
+  std::string             ready; // got ready ahead of time, see prepare_next()
 
   std::shared_ptr<int> alive = std::make_shared<int>(); // for what is posted
 };

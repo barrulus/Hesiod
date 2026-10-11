@@ -71,6 +71,7 @@ public:
   // stay editable meanwhile, and its data is not handed out to other threads
   // until it is done (nullptr from get_value_ref, as for an empty port).
   void begin_background_compute();
+  void cancel_background_compute() { this->computing = false; } // not computed after all
 
   // gnode::Node accessors, see begin_background_compute()
   template <typename T> T *get_value_ref(int port_index) const
