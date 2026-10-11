@@ -419,10 +419,11 @@ void Viewer3D::update_renderer()
             {
               bool add_skirt = HSD_CTX.app_settings.viewer.add_heighmap_skirt;
 
-              this->p_renderer->set_heightmap_geometry(arr.vector,
-                                                       shape.x,
-                                                       shape.y,
-                                                       add_skirt);
+              // built in the background, the view follows once it is ready
+              this->p_renderer->set_heightmap_geometry_async(std::move(arr.vector),
+                                                             shape.x,
+                                                             shape.y,
+                                                             add_skirt);
             }
           }))
   {
