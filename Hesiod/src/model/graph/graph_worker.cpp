@@ -57,11 +57,25 @@ void GraphWorker::answer(int pass, const std::string &node_id)
       pass);
 
   this->cv.notify_one();
+  this->prepare_next(node_id);
 }
 
 bool GraphWorker::ask(int pass, const std::string &node_id)
 {
   std::unique_lock<std::mutex> lock(this->mutex);
+
+  // got ready while the previous node was computed: no need to wait
+  if (!this->cancelled && this->ready == node_id)
+  {
+    this->ready.clear();
+    this->started.insert(node_id);
+    this->post([this, pass, node_id]() { this->prepare_after(pass, node_id); });
+
+    Logger::log()->trace("GraphWorker::ask: node '{}' (pass {}) ready ahead, no wait",
+                         node_id,
+                         pass);
+    return false;
+  }
 
   this->go = false;
 
@@ -113,6 +127,11 @@ void GraphWorker::end_pass()
 
   auto graph = std::exchange(this->graph, nullptr);
   graph->cancel_update_callback = nullptr;
+
+  // got ready for nothing: its data can be read again
+  if (auto *p_node = graph->get_node_ref_by_id<BaseNode>(std::exchange(this->ready, {})))
+    if (!this->started.contains(p_node->get_id()))
+      p_node->cancel_background_compute();
 
   std::set<std::string> left;
 
@@ -218,6 +237,30 @@ void GraphWorker::finish()
 
 bool GraphWorker::in_update_thread() { return is_update_thread; }
 
+void GraphWorker::prepare_after(int pass, const std::string &node_id)
+{
+  std::lock_guard<std::mutex> lock(this->mutex);
+
+  if (pass == this->pass && this->graph && !this->cancelled)
+    this->prepare_next(node_id);
+}
+
+void GraphWorker::prepare_next(const std::string &node_id)
+{
+  // the node after it gets ready while it is computed (not twice: an answer
+  // that came first has done it already)
+  auto next = std::ranges::find(this->planned, node_id);
+  if (next == this->planned.end() || ++next == this->planned.end() ||
+      this->started.contains(*next) || this->ready == *next)
+    return;
+
+  if (auto *p_node = this->graph->get_node_ref_by_id<BaseNode>(*next))
+  {
+    p_node->begin_background_compute();
+    this->ready = *next;
+  }
+}
+
 std::deque<GraphWorker::Job>::iterator GraphWorker::find_job(const GraphNode &graph)
 {
   return std::ranges::find_if(this->jobs,
@@ -318,6 +361,13 @@ void GraphWorker::start_next()
     this->error = nullptr;
     this->go = false;
     const int pass = ++this->pass;
+
+    // the first node gets ready right away, before the update thread starts
+    if (auto *p_node = graph->get_node_ref_by_id<BaseNode>(this->planned.front()))
+    {
+      p_node->begin_background_compute();
+      this->ready = this->planned.front();
+    }
 
     Logger::log()->trace(
         "GraphWorker::start_next: starting pass {} for graph '{}' with {} planned nodes",
