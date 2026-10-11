@@ -1,6 +1,7 @@
 /* Copyright (c) 2025 Otto Link. Distributed under the terms of the GNU General
  * Public License. The full license is in the file LICENSE, distributed with
  * this software. */
+#include <QColor>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
@@ -542,11 +543,17 @@ void Viewer3D::update_renderer()
                                               [this](const hmap::Forest &f)
                                               {
                                                 if (this->p_renderer)
+                                                {
+                                                  QColor    qc(104, 159, 56, 255);
+                                                  glm::vec3 color(qc.redF(), qc.greenF(), qc.blueF());
+
                                                   qtr::set_trees(*p_renderer,
                                                                  f.get_x(),
                                                                  f.get_y(),
                                                                  f.get_z(),
-                                                                 f.get_radius());
+                                                                 f.get_radius(),
+                                                                 color);
+                                                }
                                               }))
   {
     this->p_renderer->reset_mesh(qtr::keys::mesh::trees);
