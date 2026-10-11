@@ -47,6 +47,8 @@ jobs:
             qt-arch: win64_msvc2022_64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 180
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
     steps:
       # CI scripts come from the workflow revision; the application is always dev.
       - uses: actions/checkout@v4
@@ -85,14 +87,29 @@ jobs:
           ref: ef7dbf94b9198bc58f45951adcf1f041fcbc5ea0
           path: vcpkg
           persist-credentials: false
+      - name: Restore Windows dependency cache
+        if: runner.os == 'Windows'
+        uses: actions/cache/restore@v4
+        id: vcpkg-cache
+        with:
+          path: vcpkg-cache
+          key: vcpkg-windows-2022-${{ hashFiles('automation/scripts/ci/vcpkg.json') }}
       - name: Windows dependencies
+        id: windows-deps
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
           & ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & ./vcpkg/vcpkg.exe install --triplet x64-windows --x-manifest-root="$env:GITHUB_WORKSPACE/automation/scripts/ci" --x-install-root="$env:GITHUB_WORKSPACE/vcpkg_installed"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Save Windows dependency cache
+        if: runner.os == 'Windows' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: vcpkg-cache
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
       - name: Configure Linux
         if: runner.os == 'Linux'
         working-directory: source

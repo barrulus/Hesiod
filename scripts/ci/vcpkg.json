@@ -21,6 +21,9 @@
       "name": "opencv4",
       "default-features": false,
       "features": [
+        "fs",
+        "thread",
+        "intrinsics",
         "jpeg",
         "png",
         "tiff",
