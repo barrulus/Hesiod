@@ -5,6 +5,7 @@
 
 #include <QGuiApplication>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QMessageBox>
 #include <QScreen>
 #include <QStatusBar>
@@ -221,17 +222,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                                 ? HSD_CTX.project_model->get_graph_manager_ref()
                                 : nullptr;
 
-  // what is left goes with the next edit
+  // what is left goes with the next edit, see update_held
   if (event->key() == Qt::Key_Escape && p_manager && p_manager->get_worker().hold())
   {
-    // clears the progress bar, after the progress still on its way
-    if (p_manager->update_progress)
-      p_manager->update_progress(100.f);
-
-    QMetaObject::invokeMethod(
-        this,
-        [this]() { this->notify("Update stopped, it goes on with the next edit"); },
-        Qt::QueuedConnection);
+    this->notify("Update stopped, it goes on with the next edit");
     return;
   }
 
@@ -427,6 +421,23 @@ void MainWindow::setup_connections_with_project()
         },
         Qt::QueuedConnection);
   };
+
+  ctx.project_model->get_graph_manager_ref()->update_held = [this](bool held)
+  {
+    // queued as the progress of the update, so that it comes after it
+    QMetaObject::invokeMethod(
+        this,
+        [this, held]()
+        {
+          this->update_held_label->setVisible(held);
+          if (held)
+          {
+            this->progress_bar->setValue(0);
+            this->progress_bar->setTextVisible(false);
+          }
+        },
+        Qt::QueuedConnection);
+  };
 }
 
 void MainWindow::setup_progress_bar()
@@ -464,6 +475,15 @@ void MainWindow::setup_progress_bar()
       ctx.app_settings.colors.accent.name().toStdString());
 
   this->progress_bar->setStyleSheet(sheet.c_str());
+
+  // shown while an update stopped with Esc leaves the graph partly computed
+  this->update_held_label = new QLabel("Graph needs update", this);
+  this->update_held_label->setStyleSheet("QLabel { color: #ff5555; font-weight: bold; }");
+  this->update_held_label->setToolTip("The last update was stopped: nodes after the one "
+                                      "being computed are not up to date. The next edit "
+                                      "brings the whole graph up to date again.");
+  this->update_held_label->hide();
+  this->statusBar()->addPermanentWidget(this->update_held_label, 0);
 
   this->statusBar()->addPermanentWidget(this->progress_bar, 0);
 }

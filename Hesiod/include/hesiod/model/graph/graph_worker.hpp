@@ -66,6 +66,7 @@ public:
   static inline std::function<void()> thread_setup; // on the update thread
 
   std::function<void(std::exception_ptr)> failed; // an update was abandoned
+  std::function<void(bool)> held_changed; // see hold(): true while the graph waits
 
 private:
   struct Job
