@@ -27,8 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ottolink-dev/Hesiod
-          ref: dev
+          repository: ${{ github.event_name == 'push' && github.repository || 'ottolink-dev/Hesiod' }}
+          ref: ${{ github.event_name == 'push' && github.sha || 'dev' }}
           persist-credentials: false
       - id: source
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
@@ -50,14 +50,14 @@ jobs:
     env:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
     steps:
-      # CI scripts come from the workflow revision; the application is always dev.
+      # Pushes validate the candidate; scheduled/manual builds use upstream dev.
       - uses: actions/checkout@v4
         with:
           path: automation
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          repository: ottolink-dev/Hesiod
+          repository: ${{ github.event_name == 'push' && github.repository || 'ottolink-dev/Hesiod' }}
           ref: ${{ needs.source.outputs.sha }}
           path: source
           submodules: recursive
