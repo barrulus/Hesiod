@@ -159,7 +159,8 @@ struct AppSettings
     bool        disable_during_update = false;
     bool        enable_node_groups = true;
     bool        live_update = false;
-    bool        async_update = true; // compute in the background, see GraphWorker
+    bool        async_update = true;      // compute in the background, see GraphWorker
+    bool        show_compute_time = true; // on each node, see Style::Node
     float       port_radius = 7.f;
   } node_editor;
 

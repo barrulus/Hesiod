@@ -953,6 +953,13 @@ void AppSettingsWindow::setup_pages()
                   false,
                   "background thread worker async responsive build");
     this->add_row(editing,
+                  "Show node build time",
+                  "Show on each node how long it took to compute, running while it "
+                  "computes, to spot the slow ones.",
+                  this->make_toggle(HSD_SETTING(bool, node_editor.show_compute_time)),
+                  false,
+                  "timer duration compute time slow performance profile");
+    this->add_row(editing,
                   "Starting resolution",
                   "Heightmap resolution of new projects and new graphs. Change a "
                   "graph's own resolution from the viewport toolbar.",
