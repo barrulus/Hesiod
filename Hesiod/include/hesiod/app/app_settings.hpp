@@ -129,6 +129,9 @@ struct AppSettings
     // Interface motion (rail cross-fades, menu/tooltip effects, tree expand
     // animation). Turning it off settles running animations immediately.
     bool enable_ui_animations = true;
+
+    // colours confirmed in the colour picker, most recent first (#AARRGGBB)
+    std::vector<std::string> recent_colors = {};
   } interface;
 
   /// Look of the node palette sidebar. Only read when it is enabled.
@@ -138,6 +141,7 @@ struct AppSettings
   {
     std::string gpu_device_name = ""; // let CLWrapper decides
     int         default_resolution = 1024;
+    bool        open_projects_at_1k = false; // cap graphs above 1024 on load
     int         default_tiling = 4;
     float       default_overlap = 0.5f;
     int         preview_w = 128;
@@ -155,6 +159,7 @@ struct AppSettings
     bool        disable_during_update = false;
     bool        enable_node_groups = true;
     bool        live_update = false;
+    bool        async_update = true; // compute in the background, see GraphWorker
     float       port_radius = 7.f;
   } node_editor;
 
@@ -163,6 +168,7 @@ struct AppSettings
     int  width = 512;
     int  height = 512;
     bool add_heighmap_skirt = true;
+    int  toolbar_scale = 100; // viewport toolbar size, percent
   } viewer;
 
   struct Window // main window

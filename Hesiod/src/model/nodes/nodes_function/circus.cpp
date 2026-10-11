@@ -82,10 +82,10 @@ void compute_circus_node(BaseNode &node)
 
   // --- Inputs / Outputs
 
-  auto *p_dr   = node.get_value_ref<hmap::VirtualArray>(P_DR);
-  auto *p_env  = node.get_value_ref<hmap::VirtualArray>(P_ENV);
-  auto *p_out  = node.get_value_ref<hmap::VirtualArray>(P_OUT);
-  auto *p_mask = node.get_value_ref<hmap::VirtualArray>(P_MASK);
+  const auto *p_dr   = node.get_value_ref<hmap::VirtualArray>(P_DR);
+  const auto *p_env  = node.get_value_ref<hmap::VirtualArray>(P_ENV);
+  auto       *p_out  = node.get_value_ref<hmap::VirtualArray>(P_OUT);
+  auto       *p_mask = node.get_value_ref<hmap::VirtualArray>(P_MASK);
 
   if (!p_out)
     return;
@@ -112,12 +112,12 @@ void compute_circus_node(BaseNode &node)
   hmap::for_each_tile(
       {p_dr},
       {p_out, p_mask},
-      [&](std::vector<const hmap::Array *> in,
-          std::vector<hmap::Array *>       out,
+      [&](std::vector<const hmap::Array *> p_arrays_in,
+          std::vector<hmap::Array *>       p_arrays_out,
           const hmap::TileRegion          &region)
       {
-        auto [pa_dr]           = unpack<1>(in);
-        auto [pa_out, pa_mask] = unpack<2>(out);
+        auto [pa_dr]           = unpack<1>(p_arrays_in);
+        auto [pa_out, pa_mask] = unpack<2>(p_arrays_out);
 
         *pa_out = hmap::circus(region.shape,
                                radius,

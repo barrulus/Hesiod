@@ -74,11 +74,13 @@ void compute_white_sparse_node(BaseNode &node)
   // --- Compute
 
   hmap::for_each_tile(
+      {},
       {p_out},
-      [seed, density_per_tile](std::vector<hmap::Array *> p_arrays,
+      [seed, density_per_tile](std::vector<const hmap::Array *>,
+                               std::vector<hmap::Array *> p_arrays_out,
                                const hmap::TileRegion    &region)
       {
-        auto [pa_out] = unpack<1>(p_arrays);
+        auto [pa_out] = unpack<1>(p_arrays_out);
 
         const uint tile_seed = seed + region.key.hash();
 

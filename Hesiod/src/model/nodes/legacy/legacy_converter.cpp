@@ -95,6 +95,14 @@ std::string resolve_legacy_group_name(const meta::ContainerGroup &group,
   if (label == "ConeSigmoid")
     return "Sigmoid";
 
+  // Falloff mappings
+  if (label == "Falloff" || label == "FallOff")
+    return "Distance";
+  if (label == "ZeroedEdges")
+    return "Radial Profile";
+  if (label == "Bulkify")
+    return "Bulk";
+
   // Path mappings
   if (label == "PathResample" || label == "PathBezier" || label == "PathBezierRound" ||
       label == "PathBspline" || label == "PathDecasteljau")
@@ -115,6 +123,56 @@ std::string resolve_legacy_group_name(const meta::ContainerGroup &group,
     return "Scale";
   if (label == "PathInflate")
     return "Inflate";
+
+  // SelectValue mappings
+  if (label == "SelectInterval")
+    return "Interval";
+  if (label == "SelectThreshold")
+    return "Threshold";
+  if (label == "SelectValue")
+    return "Target";
+  if (label == "SelectMidrange")
+    return "Midrange";
+
+  // SelectSlope mappings
+  if (label == "SelectSlope")
+    return "Slope";
+  if (label == "SelectAngle")
+    return "Angle";
+  if (label == "SelectInwardOutward")
+    return "Inward / Outward";
+
+  // SelectCurvature mappings
+  if (label == "SelectCavities")
+    return "Cavities";
+  if (label == "SelectValley")
+    return "Valley";
+  if (label == "SelectBlobLog")
+    return "Blob (LoG)";
+
+  // SelectSoil mappings
+  if (label == "SelectSoilFlow")
+    return "Flow";
+  if (label == "SelectSoilRocks")
+    return "Rocks";
+  if (label == "SelectSoilWeathered")
+    return "Weathered";
+  if (label == "SelectRivers")
+    return "Rivers";
+
+  // RecastCliff mappings
+  if (label == "RecastCliff")
+    return "Isotropic";
+  if (label == "RecastCliffDirectional")
+    return "Directional";
+
+  // CloudSetValues mappings
+  if (label == "CloudSetValuesFromHeightmap")
+    return "From Heightmap";
+  if (label == "CloudSetValuesFromBorderDistance")
+    return "From Border Distance";
+  if (label == "CloudSetValuesFromMinDistance")
+    return "From Min Distance";
 
   if (group.current_container_name().has_value() &&
       group.contains(*group.current_container_name()))
@@ -275,6 +333,22 @@ nlohmann::json convert_legacy_node_json(const nlohmann::json &json_node)
     target_label = "Cone";
     group_name = "Sigmoid";
   }
+  // --- Falloff family ---
+  else if (label == "Falloff" || label == "FallOff")
+  {
+    target_label = "Falloff";
+    group_name = "Distance";
+  }
+  else if (label == "ZeroedEdges")
+  {
+    target_label = "Falloff";
+    group_name = "Radial Profile";
+  }
+  else if (label == "Bulkify")
+  {
+    target_label = "Falloff";
+    group_name = "Bulk";
+  }
   // --- Path Resample family ---
   else if (label == "PathResample" || label == "PathBezier" ||
            label == "PathBezierRound" || label == "PathBspline" ||
@@ -320,6 +394,107 @@ nlohmann::json convert_legacy_node_json(const nlohmann::json &json_node)
     target_label = "PathTransform";
     group_name = "Inflate";
   }
+  // --- SelectValue family ---
+  else if (label == "SelectInterval")
+  {
+    target_label = "SelectValue";
+    group_name = "Interval";
+  }
+  else if (label == "SelectThreshold")
+  {
+    target_label = "SelectValue";
+    group_name = "Threshold";
+  }
+  else if (label == "SelectValue")
+  {
+    target_label = "SelectValue";
+    group_name = "Target";
+  }
+  else if (label == "SelectMidrange")
+  {
+    target_label = "SelectValue";
+    group_name = "Midrange";
+  }
+  // --- SelectSlope family ---
+  else if (label == "SelectSlope")
+  {
+    target_label = "SelectSlope";
+    group_name = "Slope";
+  }
+  else if (label == "SelectAngle")
+  {
+    target_label = "SelectSlope";
+    group_name = "Angle";
+  }
+  else if (label == "SelectInwardOutward")
+  {
+    target_label = "SelectSlope";
+    group_name = "Inward / Outward";
+  }
+  // --- SelectCurvature family ---
+  else if (label == "SelectCavities")
+  {
+    target_label = "SelectCurvature";
+    group_name = "Cavities";
+  }
+  else if (label == "SelectValley")
+  {
+    target_label = "SelectCurvature";
+    group_name = "Valley";
+  }
+  else if (label == "SelectBlobLog")
+  {
+    target_label = "SelectCurvature";
+    group_name = "Blob (LoG)";
+  }
+  // --- SelectSoil family ---
+  else if (label == "SelectSoilFlow")
+  {
+    target_label = "SelectSoil";
+    group_name = "Flow";
+  }
+  else if (label == "SelectSoilRocks")
+  {
+    target_label = "SelectSoil";
+    group_name = "Rocks";
+  }
+  else if (label == "SelectSoilWeathered")
+  {
+    target_label = "SelectSoil";
+    group_name = "Weathered";
+  }
+  else if (label == "SelectRivers")
+  {
+    target_label = "SelectSoil";
+    group_name = "Rivers";
+  }
+  // --- RecastCliff family ---
+  else if (label == "RecastCliff")
+  {
+    target_label = "RecastCliff";
+    group_name = "Isotropic";
+  }
+  else if (label == "RecastCliffDirectional")
+  {
+    target_label = "RecastCliff";
+    group_name = "Directional";
+  }
+  // --- CloudSetValues family ---
+  else if (label == "CloudSetValuesFromHeightmap")
+  {
+    target_label = "CloudSetValues";
+    group_name = "From Heightmap";
+  }
+  else if (label == "CloudSetValuesFromBorderDistance")
+  {
+    target_label = "CloudSetValues";
+    group_name = "From Border Distance";
+  }
+  else if (label == "CloudSetValuesFromMinDistance")
+  {
+    target_label = "CloudSetValues";
+    group_name = "From Min Distance";
+  }
   // --- SetBorders ---
   else if (label == "SetBorders")
   {
@@ -344,6 +519,168 @@ nlohmann::json convert_legacy_node_json(const nlohmann::json &json_node)
       }
     }
     rename_out_to_output(converted_node, "SetBorders");
+    return converted_node;
+  }
+  // --- Morphology family -> MorphologicalOperators ---
+  else if (label == "Border" || label == "Closing" || label == "Dilation" ||
+           label == "Erosion" || label == "Opening" || label == "MorphologicalTopHat" ||
+           label == "MorphologicalGradient")
+  {
+    nlohmann::json converted_node = json_node;
+    converted_node["label"] = "MorphologicalOperators";
+    int op_val = 0;
+    if (label == "Border")
+      op_val = 0;
+    else if (label == "Closing")
+      op_val = 1;
+    else if (label == "Dilation")
+      op_val = 2;
+    else if (label == "Erosion")
+      op_val = 3;
+    else if (label == "Opening")
+      op_val = 4;
+    else if (label == "MorphologicalTopHat")
+      op_val = 6;
+    else if (label == "MorphologicalGradient")
+      op_val = 7;
+
+    if (converted_node.contains("containers") && converted_node["containers"].is_object())
+    {
+      for (auto &[cname, cjson] : converted_node["containers"].items())
+      {
+        if (cjson.is_object())
+          cjson["operator"] = {{"value", op_val}};
+      }
+    }
+    else
+    {
+      converted_node["operator"] = {{"value", op_val}};
+    }
+    rename_out_to_output(converted_node, "MorphologicalOperators");
+    return converted_node;
+  }
+  // --- Curvature family -> Curvatures ---
+  else if (label == "CurvatureMean" || label == "AccumulationCurvature" ||
+           label == "ShapeIndex" || label == "Unsphericity")
+  {
+    nlohmann::json converted_node = json_node;
+    converted_node["label"] = "Curvatures";
+    int ctype_val = 2;
+    if (label == "CurvatureMean")
+      ctype_val = 2;
+    else if (label == "AccumulationCurvature")
+      ctype_val = 7;
+    else if (label == "ShapeIndex")
+      ctype_val = 8;
+    else if (label == "Unsphericity")
+      ctype_val = 9;
+
+    if (converted_node.contains("containers") && converted_node["containers"].is_object())
+    {
+      for (auto &[cname, cjson] : converted_node["containers"].items())
+      {
+        if (cjson.is_object())
+          cjson["ctype"] = {{"value", ctype_val}};
+      }
+    }
+    else
+    {
+      converted_node["ctype"] = {{"value", ctype_val}};
+    }
+    return converted_node;
+  }
+  // --- Local Metrics family -> LocalMetrics ---
+  else if (label == "RelativeElevation" || label == "Ruggedness")
+  {
+    nlohmann::json converted_node = json_node;
+    converted_node["label"] = "LocalMetrics";
+    int metric_val = 10;
+    if (label == "RelativeElevation")
+      metric_val = 10;
+    else if (label == "Ruggedness")
+      metric_val = 12;
+
+    if (converted_node.contains("containers") && converted_node["containers"].is_object())
+    {
+      for (auto &[cname, cjson] : converted_node["containers"].items())
+      {
+        if (cjson.is_object())
+          cjson["metric"] = {{"value", metric_val}};
+      }
+    }
+    else
+    {
+      converted_node["metric"] = {{"value", metric_val}};
+    }
+    return converted_node;
+  }
+  // --- Terrace -> StrataTerrace ---
+  else if (label == "Terrace")
+  {
+    nlohmann::json converted_node = json_node;
+    converted_node["label"] = "StrataTerrace";
+
+    auto remap_terrace_params = [](nlohmann::json &cjson)
+    {
+      if (cjson.contains("nlevels") && !cjson.contains("kz"))
+      {
+        cjson["kz"] = cjson["nlevels"];
+        cjson.erase("nlevels");
+      }
+      if (cjson.contains("gain") && !cjson.contains("gamma"))
+      {
+        cjson["gamma"] = cjson["gain"];
+        cjson.erase("gain");
+      }
+      if (cjson.contains("noise_ratio") && !cjson.contains("gamma_noise_ratio"))
+      {
+        cjson["gamma_noise_ratio"] = cjson["noise_ratio"];
+        cjson.erase("noise_ratio");
+      }
+    };
+
+    if (converted_node.contains("containers") && converted_node["containers"].is_object())
+    {
+      for (auto &[cname, cjson] : converted_node["containers"].items())
+      {
+        if (cjson.is_object())
+          remap_terrace_params(cjson);
+      }
+    }
+    else
+    {
+      remap_terrace_params(converted_node);
+    }
+    rename_out_to_output(converted_node, "StrataTerrace");
+    return converted_node;
+  }
+  // --- HydraulicStreamLog: set levels to 1 if not present for older hsd files ---
+  else if (label == "HydraulicStreamLog" || label == "HydraulicStream")
+  {
+    nlohmann::json converted_node = json_node;
+    converted_node["label"] = "HydraulicStreamLog";
+
+    auto fix_stream_log = [](nlohmann::json &cjson)
+    {
+      if (!cjson.contains("levels"))
+      {
+        cjson["levels"] = {{"value", 1}};
+      }
+    };
+
+    if (converted_node.contains("containers") && converted_node["containers"].is_object())
+    {
+      for (auto &[cname, cjson] : converted_node["containers"].items())
+      {
+        if (cjson.is_object())
+          fix_stream_log(cjson);
+      }
+    }
+    else
+    {
+      fix_stream_log(converted_node);
+    }
+    rename_out_to_output(converted_node, "HydraulicStreamLog");
     return converted_node;
   }
 
@@ -803,6 +1140,13 @@ static bool is_path_modifier_node(const std::string &label)
          label == "PathInflate";
 }
 
+static bool is_mask_output_node(const std::string &label)
+{
+  return label == "CurvatureMean" || label == "AccumulationCurvature" ||
+         label == "ShapeIndex" || label == "Unsphericity" ||
+         label == "RelativeElevation" || label == "Ruggedness";
+}
+
 nlohmann::json convert_legacy_graph_json(const nlohmann::json &graph_json)
 {
   if (!graph_json.is_object())
@@ -842,7 +1186,12 @@ nlohmann::json convert_legacy_graph_json(const nlohmann::json &graph_json)
       std::string from_label = node_labels[node_id_from];
       std::string to_label = node_labels[node_id_to];
 
-      if (port_id_from == "out")
+      if (is_mask_output_node(from_label) &&
+          (port_id_from == "out" || port_id_from == "output"))
+      {
+        json_link["port_id_from"] = "mask";
+      }
+      else if (port_id_from == "out")
       {
         json_link["port_id_from"] = "output";
       }
@@ -903,7 +1252,12 @@ nlohmann::json convert_legacy_graph_widget_json(const nlohmann::json &widget_jso
       std::string from_label = node_captions[node_out_id];
       std::string to_label = node_captions[node_in_id];
 
-      if (port_out_id == "out")
+      if (is_mask_output_node(from_label) &&
+          (port_out_id == "out" || port_out_id == "output"))
+      {
+        json_link["port_out_id"] = "mask";
+      }
+      else if (port_out_id == "out")
       {
         json_link["port_out_id"] = "output";
       }

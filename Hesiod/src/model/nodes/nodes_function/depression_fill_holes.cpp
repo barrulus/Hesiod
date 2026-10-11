@@ -65,10 +65,10 @@ void compute_deposition_fill_holes_node(BaseNode &node)
 
   // --- Inputs / Outputs
 
-  auto *p_in         = node.get_value_ref<hmap::VirtualArray>(P_IN);
-  auto *p_mask       = node.get_value_ref<hmap::VirtualArray>(P_MASK);
-  auto *p_out        = node.get_value_ref<hmap::VirtualArray>(P_OUT);
-  auto *p_deposition = node.get_value_ref<hmap::VirtualArray>(P_DEPOSITION);
+  const auto *p_in         = node.get_value_ref<hmap::VirtualArray>(P_IN);
+  const auto *p_mask       = node.get_value_ref<hmap::VirtualArray>(P_MASK);
+  auto       *p_out        = node.get_value_ref<hmap::VirtualArray>(P_OUT);
+  auto       *p_deposition = node.get_value_ref<hmap::VirtualArray>(P_DEPOSITION);
 
   if (!p_in)
     return;
@@ -84,19 +84,21 @@ void compute_deposition_fill_holes_node(BaseNode &node)
 
   // --- Prepare mask
 
-  std::shared_ptr<hmap::VirtualArray> sp_mask = pre_process_mask(node, p_mask, *p_in);
+  hmap::VirtualArray mask_default = pre_process_mask(node, p_mask, *p_in);
+  if (!mask_default.empty())
+    p_mask = &mask_default;
 
   // --- Compute
 
   hmap::for_each_tile(
       {p_in, p_mask},
       {p_out, p_deposition},
-      [&](std::vector<const hmap::Array *> in,
-          std::vector<hmap::Array *>       out,
+      [&](std::vector<const hmap::Array *> p_arrays_in,
+          std::vector<hmap::Array *>       p_arrays_out,
           const hmap::TileRegion &)
       {
-        auto [pa_in, pa_mask]        = unpack<2>(in);
-        auto [pa_out, pa_deposition] = unpack<2>(out);
+        auto [pa_in, pa_mask]        = unpack<2>(p_arrays_in);
+        auto [pa_out, pa_deposition] = unpack<2>(p_arrays_out);
 
         *pa_out = *pa_in;
 
@@ -109,7 +111,7 @@ void compute_deposition_fill_holes_node(BaseNode &node)
   // --- Post-process
 
   post_process_heightmap(node, *p_out);
-  p_deposition->smooth_overlap_buffers();
+  p_deposition->sync_overlap_buffers();
 }
 
 } // namespace hesiod

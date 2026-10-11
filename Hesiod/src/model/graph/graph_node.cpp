@@ -2,7 +2,9 @@
  * Public License. The full license is in the file LICENSE, distributed with
  * this software. */
 #include "hesiod/model/graph/graph_node.hpp"
+#include "hesiod/app/hesiod_application.hpp"
 #include "hesiod/logger.hpp"
+#include "hesiod/model/graph/graph_worker.hpp"
 #include "hesiod/model/nodes/base_node.hpp"
 #include "hesiod/model/nodes/broadcast_node.hpp"
 #include "hesiod/model/nodes/legacy/legacy_converter.hpp"
@@ -62,6 +64,8 @@ std::string GraphNode::add_node(const std::shared_ptr<gnode::Node> &node,
 {
   Logger::log()->trace("GraphNode::add_node: id = {}", id);
 
+  this->stop_update();
+
   // basic GNode adding...
   std::string node_id = gnode::Graph::add_node(node, id);
 
@@ -95,6 +99,8 @@ std::string GraphNode::add_node(const std::shared_ptr<gnode::Node> &node,
 void GraphNode::change_config_values(const GraphConfig &new_config)
 {
   Logger::log()->trace("GraphNode::change_config_values");
+
+  this->stop_update();
 
   *this->config = new_config;
 
@@ -161,8 +167,10 @@ void GraphNode::json_from(nlohmann::json const &json, GraphConfig *p_input_confi
   json_safe_get(converted_json, "origin", vo);
   json_safe_get(converted_json, "size", vs);
 
-  this->set_origin(glm::vec2(vo[0], vo[1]));
-  this->set_size(glm::vec2(vs[0], vs[1]));
+  if (vo.size() >= 2)
+    this->set_origin(glm::vec2(vo[0], vo[1]));
+  if (vs.size() >= 2)
+    this->set_size(glm::vec2(vs[0], vs[1]));
 
   float rotation_angle = 0.f;
   json_safe_get(converted_json, "rotation_angle", rotation_angle);
@@ -180,16 +188,44 @@ void GraphNode::json_from(nlohmann::json const &json, GraphConfig *p_input_confi
 
       Logger::log()->trace("GraphNode::json_from, node type: {}", node_type);
 
-      // instanciate the node
-      std::shared_ptr<gnode::Node> node = node_factory(node_type, this->config);
+      std::string node_id = "";
+      json_safe_get(json_node, "id", node_id);
 
-      std::string id = "";
-      json_safe_get(json_node, "id", id);
+      try
+      {
+        // instanciate the node
+        std::shared_ptr<gnode::Node> node = node_factory(node_type, this->config);
+        if (!node)
+          throw std::runtime_error("Unknown or invalid node type: " + node_type);
 
-      this->add_node(node, id);
+        this->add_node(node, node_id);
 
-      // set its parameters
-      dynamic_cast<BaseNode *>(node.get())->json_from(json_node);
+        // set its parameters
+        if (auto *p_base = dynamic_cast<BaseNode *>(node.get()))
+          p_base->json_from(json_node);
+        else
+          throw std::runtime_error("Node is not a BaseNode: " + node_type);
+      }
+      catch (const std::exception &e)
+      {
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::NodeCreation,
+            std::format("Graph '{}': Failed to create node '{}' (type '{}'): {}",
+                        this->get_id(),
+                        node_id.empty() ? "?" : node_id,
+                        node_type,
+                        e.what()));
+      }
+      catch (...)
+      {
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::NodeCreation,
+            std::format(
+                "Graph '{}': Failed to create node '{}' (type '{}'): unknown error",
+                this->get_id(),
+                node_id.empty() ? "?" : node_id,
+                node_type));
+      }
     }
   }
   else
@@ -215,7 +251,33 @@ void GraphNode::json_from(nlohmann::json const &json, GraphConfig *p_input_confi
                            node_id_to,
                            port_id_to);
 
-      this->new_link(node_id_from, port_id_from, node_id_to, port_id_to);
+      try
+      {
+        this->new_link(node_id_from, port_id_from, node_id_to, port_id_to);
+      }
+      catch (const std::exception &e)
+      {
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::LinkCreation,
+            std::format("Graph '{}': Failed to create link {}/{} => {}/{}: {}",
+                        this->get_id(),
+                        node_id_from,
+                        port_id_from,
+                        node_id_to,
+                        port_id_to,
+                        e.what()));
+      }
+      catch (...)
+      {
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::LinkCreation,
+            std::format("Graph '{}': Failed to create link {}/{} => {}/{}: unknown error",
+                        this->get_id(),
+                        node_id_from,
+                        port_id_from,
+                        node_id_to,
+                        port_id_to));
+      }
     }
   }
   else
@@ -305,6 +367,8 @@ void GraphNode::remove_node(const std::string &id)
 {
   Logger::log()->trace("GraphNode::remove_node: id = {}", id);
 
+  this->stop_update();
+
   // "special" nodes treatment
   BaseNode *p_basenode = this->get_node_ref_by_id<BaseNode>(id);
 
@@ -328,6 +392,24 @@ void GraphNode::remove_node(const std::string &id)
 
   // basic GNode removing...
   gnode::Graph::remove_node(id);
+}
+
+std::string GraphNode::runtime_info_to_string(const char separator) const
+{
+  std::string result;
+
+  for (const auto &[node_id, p_gnode] : this->nodes)
+  {
+    const BaseNode *p_node = dynamic_cast<const BaseNode *>(p_gnode.get());
+    if (p_node)
+    {
+      if (!result.empty())
+        result += '\n';
+      result += p_node->runtime_info_to_string(separator);
+    }
+  }
+
+  return result;
 }
 
 void GraphNode::reseed(bool backward)
@@ -405,12 +487,21 @@ void GraphNode::setup_new_receive_node(BaseNode *p_node)
   p_receive_node->set_p_coord_frame(dynamic_cast<hmap::CoordFrame *>(this));
 }
 
+void GraphNode::stop_update()
+{
+  if (this->p_worker)
+    this->p_worker->stop();
+}
+
 void GraphNode::update()
 {
   Logger::log()->trace("GraphNode::update");
 
   if (this->update_started)
     this->update_started();
+
+  if (this->p_worker && this->p_worker->request(*this))
+    return;
 
   gnode::Graph::update();
 
@@ -432,6 +523,9 @@ void GraphNode::update(const std::vector<std::string> &node_ids)
 
   if (this->update_started)
     this->update_started();
+
+  if (this->p_worker && this->p_worker->request(*this, &node_ids))
+    return;
 
   gnode::Graph::update(node_ids);
 

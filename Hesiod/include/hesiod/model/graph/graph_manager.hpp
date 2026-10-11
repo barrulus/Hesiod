@@ -14,6 +14,7 @@ namespace hesiod
 
 class GraphNode; // forward
 class GraphConfig;
+class GraphWorker;
 
 // =====================================
 // GraphManager
@@ -24,6 +25,7 @@ class GraphManager : public std::enable_shared_from_this<GraphManager>
 {
 public:
   explicit GraphManager(const std::string &id = "");
+  ~GraphManager();
 
   std::shared_ptr<GraphManager> get_shared();
   void                          clear();
@@ -36,6 +38,7 @@ public:
   int                             get_graph_order_index(const std::string &graph_id);
   GraphNode                      *get_graph_ref_by_id(const std::string &graph_id);
   std::string                     get_id() const;
+  GraphWorker                    &get_worker(); // updates the graphs in the background
 
   void set_export_param(const FlattenConfig &new_export_param);
   void set_graph_order(const std::vector<std::string> &new_graph_order);
@@ -49,7 +52,8 @@ public:
   bool is_graph_id_available(const std::string &graph_id);
   void remove_graph_node(const std::string &graph_id);
   void reseed(bool backward);
-  void update();
+  std::string runtime_info_to_string(const char separator = ',') const;
+  void        update();
 
   // --- Serialization ---
   void           json_from(nlohmann::json const &json, GraphConfig *p_config);
@@ -75,6 +79,7 @@ private:
                             const hmap::VirtualArray *h_source);
   void on_remove_broadcast_tag(const std::string &tag);
   void on_update_progress(const std::string &node_id, float progress);
+  void on_update_failed(std::exception_ptr error);
 
   std::string              id;
   GraphNodeMap             graph_nodes;
@@ -82,6 +87,9 @@ private:
   std::vector<std::string> graph_order;
   BroadcastMap             broadcast_params;
   FlattenConfig            export_param;
+
+  // last: it has to stop before the graphs go
+  std::unique_ptr<GraphWorker> worker;
 };
 
 } // namespace hesiod

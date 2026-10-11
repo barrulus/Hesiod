@@ -105,7 +105,6 @@ void compute_flow_simulation_node(BaseNode &node)
   const auto flux_strength      = node.val<float>(A_FLUX_DIFFUSION_STRENGTH);
   const auto solver_stride      = node.val<int>(A_SOLVER_STRIDE);
   const auto post_filter        = node.val<bool>(A_POST_FILTER);
-  const auto radius             = node.val<float>(A_RADIUS);
   const auto area_filter        = node.val<bool>(A_AREA_FILTER);
   const auto radius_limit       = node.val<float>(A_RADIUS_LIMIT);
   // clang-format on
@@ -149,12 +148,12 @@ void compute_flow_simulation_node(BaseNode &node)
   hmap::for_each_tile(
       {p_z, p_depth_map, p_rain_map},
       {p_water_out},
-      [&](std::vector<const hmap::Array *> in,
-          std::vector<hmap::Array *>       out,
+      [&](std::vector<const hmap::Array *> p_arrays_in,
+          std::vector<hmap::Array *>       p_arrays_out,
           const hmap::TileRegion &)
       {
-        auto [pa_z, pa_depth, pa_rain] = unpack<3>(in);
-        auto [pa_water]                = unpack<1>(out);
+        auto [pa_z, pa_depth, pa_rain] = unpack<3>(p_arrays_in);
+        auto [pa_water]                = unpack<1>(p_arrays_out);
 
         hmap::Array depth_scaled = *pa_depth;
         hmap::remap(depth_scaled, 0.f, 1.f, dmin, dmax);
@@ -183,10 +182,13 @@ void compute_flow_simulation_node(BaseNode &node)
     float area_pixels = M_PI * std::pow(radius_limit * p_z->shape.x, 2);
 
     hmap::for_each_tile(
+        {},
         {p_water_out},
-        [&](std::vector<hmap::Array *> arrays, const hmap::TileRegion &)
+        [&](std::vector<const hmap::Array *>,
+            std::vector<hmap::Array *> p_arrays_out,
+            const hmap::TileRegion &)
         {
-          auto [pa_water] = unpack<1>(arrays);
+          auto [pa_water] = unpack<1>(p_arrays_out);
 
           *pa_water = hmap::area_remove(*pa_water, area_pixels);
         },
@@ -198,10 +200,14 @@ void compute_flow_simulation_node(BaseNode &node)
     int ir = node.val_pixel_radius(A_RADIUS);
 
     hmap::for_each_tile(
-        {p_z, p_water_out},
-        [&](std::vector<hmap::Array *> arrays, const hmap::TileRegion &)
+        {p_z},
+        {p_water_out},
+        [&](std::vector<const hmap::Array *> p_arrays_in,
+            std::vector<hmap::Array *>       p_arrays_out,
+            const hmap::TileRegion &)
         {
-          auto [pa_z, pa_water] = unpack<2>(arrays);
+          auto [pa_z]     = unpack<1>(p_arrays_in);
+          auto [pa_water] = unpack<1>(p_arrays_out);
 
           hmap::gpu::water_depth_filter(*pa_water, *pa_z, ir, nullptr, true, 0.2f);
         },

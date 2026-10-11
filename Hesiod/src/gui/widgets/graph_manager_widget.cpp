@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QScreen>
 #include <QSettings>
+#include <QSignalBlocker>
 
 #include "hesiod/app/hesiod_application.hpp"
 #include "hesiod/gui/widgets/coord_frame_widget.hpp"
@@ -18,6 +19,7 @@
 #include "hesiod/model/graph/flatten_config.hpp"
 #include "hesiod/model/graph/graph_manager.hpp"
 #include "hesiod/model/graph/graph_node.hpp"
+#include "hesiod/model/graph/graph_worker.hpp"
 #include "hesiod/model/utils.hpp"
 
 #define MINIMUM_WIDTH 384
@@ -57,6 +59,7 @@ GraphManagerWidget::GraphManagerWidget(std::weak_ptr<GraphManager> p_graph_manag
   this->list_widget->setViewMode(QListView::ListMode);
   this->list_widget->setDragDropMode(QAbstractItemView::InternalMove);
   this->list_widget->setContextMenuPolicy(Qt::CustomContextMenu);
+  this->setup_reset_actions();
   this->list_widget->setMinimumSize(MINIMUM_WIDTH, this->list_widget->height());
 
   // populate with graph editor names
@@ -168,7 +171,12 @@ void GraphManagerWidget::add_list_item(const std::string &id)
   this->connect(this,
                 &GraphManagerWidget::update_finished,
                 widget,
-                [widget]() { widget->on_combobox_changed(); });
+                [this, widget]()
+                {
+                  // its image is refreshed, the project has not changed for all that
+                  const QSignalBlocker blocker(this);
+                  widget->on_combobox_changed();
+                });
 }
 
 void GraphManagerWidget::clear()
@@ -231,6 +239,8 @@ void GraphManagerWidget::on_apply_changes()
   auto gm = this->p_graph_manager.lock();
   if (!gm)
     return;
+
+  gm->get_worker().stop(); // Receive nodes read the frames
 
   // retrieve coordinate frame parameters from the frames canvas
   for (auto &[id, graph] : gm->get_graph_nodes())
@@ -369,7 +379,7 @@ void GraphManagerWidget::on_new_graph_request()
 
   // get config from user
   auto              config = std::make_shared<hesiod::GraphConfig>();
-  GraphConfigDialog config_editor(*config);
+  GraphConfigDialog config_editor(*config, this);
 
   {
     int ret = config_editor.exec();
@@ -480,18 +490,21 @@ void GraphManagerWidget::show_context_menu(const QPoint &pos)
   QMenu    menu;
   QAction *new_action = menu.addAction("New");
   QAction *set_focus_action = menu.addAction("Show in graph editor");
+  menu.addSeparator();
+  QMenu *reset_menu = menu.addMenu("Reset transform");
+  reset_menu->addActions(this->reset_actions);
+  menu.addSeparator();
   QAction *delete_action = menu.addAction("Delete");
+
+  // the reset actions work on the current item
+  this->list_widget->setCurrentItem(item);
 
   QPoint   global_pos = this->list_widget->mapToGlobal(pos);
   QAction *selected_action = menu.exec(global_pos);
 
   if (selected_action == delete_action)
   {
-    delete this->list_widget->takeItem(this->list_widget->row(item));
-    gm->remove_graph_node(selected_id);
-    this->coord_frame_widget->remove_frame(selected_id);
-
-    Q_EMIT this->graph_removed();
+    this->delete_graph(selected_id);
   }
   else if (selected_action == set_focus_action)
   {
@@ -501,6 +514,64 @@ void GraphManagerWidget::show_context_menu(const QPoint &pos)
   {
     this->on_new_graph_request();
   }
+}
+
+void GraphManagerWidget::setup_reset_actions()
+{
+  // location, rotation and scale of the current graph's frame back to the
+  // defaults (origin, no rotation, unit size), from the context menu or with
+  // Alt+L / Alt+R / Alt+S while this window has focus
+  const std::vector<std::pair<QString, QString>> labels = {{"Location", "Alt+L"},
+                                                           {"Rotation", "Alt+R"},
+                                                           {"Scale", "Alt+S"}};
+  for (int k = 0; k < 3; k++)
+  {
+    auto *action = new QAction(labels[k].first, this);
+    action->setShortcut(QKeySequence(labels[k].second));
+    action->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    this->addAction(action);
+    this->reset_actions.push_back(action);
+
+    this->connect(action,
+                  &QAction::triggered,
+                  this,
+                  [this, k]()
+                  {
+                    QListWidgetItem *item = this->list_widget->currentItem();
+                    if (!item)
+                      return;
+
+                    FrameItem *frame = this->coord_frame_widget->get_frame_ref(
+                        item->text().toStdString());
+                    if (k == 0)
+                      frame->set_origin(QPointF(0.f, 0.f));
+                    else if (k == 1)
+                      frame->set_angle(0.f);
+                    else
+                      frame->set_size(QPointF(1.f, 1.f));
+                  });
+  }
+}
+
+void GraphManagerWidget::delete_graph(const std::string &graph_id)
+{
+  Logger::log()->trace("GraphManagerWidget::delete_graph: {}", graph_id);
+
+  auto gm = this->p_graph_manager.lock();
+  if (!gm)
+    return;
+
+  for (int i = 0; i < this->list_widget->count(); ++i)
+    if (this->list_widget->item(i)->text().toStdString() == graph_id)
+    {
+      delete this->list_widget->takeItem(i);
+      break;
+    }
+
+  gm->remove_graph_node(graph_id);
+  this->coord_frame_widget->remove_frame(graph_id);
+
+  Q_EMIT this->graph_removed();
 }
 
 void GraphManagerWidget::update_combobox(const std::string &graph_id)

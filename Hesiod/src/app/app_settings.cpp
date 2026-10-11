@@ -161,6 +161,7 @@ void AppSettings::json_from(nlohmann::json const &json)
                 "interface.enable_node_palette_sidebar",
                 interface.enable_node_palette_sidebar);
   json_safe_get(json, "interface.enable_ui_animations", interface.enable_ui_animations);
+  json_safe_get(json, "interface.recent_colors", interface.recent_colors);
 
   // The interface scale is the one setting a bad value makes the application
   // unusable with, so it is read by hand rather than through json_safe_get: a
@@ -266,6 +267,7 @@ void AppSettings::json_from(nlohmann::json const &json)
   }
 
   json_safe_get(json, "node_editor.default_resolution", node_editor.default_resolution);
+  json_safe_get(json, "node_editor.open_projects_at_1k", node_editor.open_projects_at_1k);
   json_safe_get(json, "node_editor.default_tiling", node_editor.default_tiling);
   json_safe_get(json, "node_editor.default_overlap", node_editor.default_overlap);
   json_safe_get(json, "node_editor.preview_w", node_editor.preview_w);
@@ -297,11 +299,13 @@ void AppSettings::json_from(nlohmann::json const &json)
                 node_editor.disable_during_update);
   json_safe_get(json, "node_editor.enable_node_groups", node_editor.enable_node_groups);
   json_safe_get(json, "node_editor.live_update", node_editor.live_update);
+  json_safe_get(json, "node_editor.async_update", node_editor.async_update);
   json_safe_get(json, "node_editor.port_radius", node_editor.port_radius);
 
   json_safe_get(json, "viewer.width", viewer.width);
   json_safe_get(json, "viewer.height", viewer.height);
   json_safe_get(json, "viewer.add_heighmap_skirt", viewer.add_heighmap_skirt);
+  json_safe_get(json, "viewer.toolbar_scale", viewer.toolbar_scale);
 
   // window
   {
@@ -365,6 +369,7 @@ nlohmann::json AppSettings::json_to() const
   json["interface.ui_scale"] = ui_scale::sanitize(interface.ui_scale);
   json["interface.enable_node_palette_sidebar"] = interface.enable_node_palette_sidebar;
   json["interface.enable_ui_animations"] = interface.enable_ui_animations;
+  json["interface.recent_colors"] = interface.recent_colors;
 
   json["node_palette.surface"] = node_palette.surface.name().toStdString();
   json["node_palette.surface_hover"] = node_palette.surface_hover.name().toStdString();
@@ -386,6 +391,7 @@ nlohmann::json AppSettings::json_to() const
 
   json["node_editor.gpu_device_name"] = node_editor.gpu_device_name;
   json["node_editor.default_resolution"] = node_editor.default_resolution;
+  json["node_editor.open_projects_at_1k"] = node_editor.open_projects_at_1k;
   json["node_editor.default_tiling"] = node_editor.default_tiling;
   json["node_editor.default_overlap"] = node_editor.default_overlap;
   json["node_editor.preview_w"] = node_editor.preview_w;
@@ -404,11 +410,13 @@ nlohmann::json AppSettings::json_to() const
   json["node_editor.disable_during_update"] = node_editor.disable_during_update;
   json["node_editor.enable_node_groups"] = node_editor.enable_node_groups;
   json["node_editor.live_update"] = node_editor.live_update;
+  json["node_editor.async_update"] = node_editor.async_update;
   json["node_editor.port_radius"] = node_editor.port_radius;
 
   json["viewer.width"] = viewer.width;
   json["viewer.height"] = viewer.height;
   json["viewer.add_heighmap_skirt"] = viewer.add_heighmap_skirt;
+  json["viewer.toolbar_scale"] = viewer.toolbar_scale;
 
   json["window.geom_main.x"] = window.geom_main.x;
   json["window.geom_main.y"] = window.geom_main.y;

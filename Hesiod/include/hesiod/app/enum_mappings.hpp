@@ -154,7 +154,10 @@ static struct EnumMappings
       {"Z-Score", hmap::gpu::LocalMetrics::LM_LOCAL_Z_SCORE},
       {"Topographic Position Index",
        hmap::gpu::LocalMetrics::LM_TOPOGRAPHIC_POSITION_INDEX},
+      {"Topographic Wetness Index",
+       hmap::gpu::LocalMetrics::LM_TOPOGRAPHIC_WETNESS_INDEX},
       {"Relative Elevation", hmap::gpu::LocalMetrics::LM_RELATIVE_ELEVATION},
+      {"Roughness", hmap::gpu::LocalMetrics::LM_ROUGHNESS},
       {"Ruggedness", hmap::gpu::LocalMetrics::LM_RUGGEDNESS},
       {"Rugosity Concave", hmap::gpu::LocalMetrics::LM_RUGOSITY_CONCAVE},
       {"Rugosity Convex", hmap::gpu::LocalMetrics::LM_RUGOSITY_CONVEX}};
@@ -163,6 +166,11 @@ static struct EnumMappings
       {"union", MaskCombineMethod::UNION},
       {"intersection", MaskCombineMethod::INTERSECTION},
       {"exclusion", MaskCombineMethod::EXCLUSION}};
+
+  const std::map<std::string, int> min_max_kernel_map = {
+      {"Disk", static_cast<int>(hmap::MinMaxKernel::DISK)},
+      {"Octagon", static_cast<int>(hmap::MinMaxKernel::OCTAGON)},
+      {"Square", static_cast<int>(hmap::MinMaxKernel::SQUARE)}};
 
   const std::map<std::string, int> morphology_operation_map = {
       {"Border", hmap::MorphologyOperation::MO_BORDER},

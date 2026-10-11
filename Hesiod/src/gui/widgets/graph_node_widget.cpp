@@ -8,8 +8,8 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPointer>
+#include <QPushButton>
 #include <QScreen>
 #include <QTimer>
 #include <QToolButton>
@@ -23,6 +23,7 @@
 #include "hesiod/gui/widgets/graph_config_widgets/graph_config_dialog.hpp"
 #include "hesiod/gui/widgets/graph_node_widget.hpp"
 #include "hesiod/gui/widgets/gui_utils.hpp"
+#include "hesiod/gui/widgets/message_dialog.hpp"
 #include "hesiod/gui/widgets/node_attributes_widget.hpp"
 #include "hesiod/gui/widgets/node_info_dialog.hpp"
 #include "hesiod/gui/widgets/node_widget.hpp"
@@ -500,13 +501,16 @@ void GraphNodeWidget::on_graph_clear_request()
 {
   Logger::log()->trace("GraphNodeWidget::on_graph_clear_request");
 
-  QMessageBox::StandardButton reply = QMessageBox::question(
-      nullptr,
-      "?",
-      "This will clear everything. Are you sure?",
-      QMessageBox::Yes | QMessageBox::No);
+  MessageDialog box(this,
+                    MessageDialog::Kind::Warning,
+                    "Clear the whole graph?",
+                    "Every node and link in this graph will be removed.");
+  box.setWindowTitle("Clear graph");
+  QPushButton *clear_button = box.add_button("Clear graph", MessageDialog::Role::Danger);
+  box.add_button("Cancel", MessageDialog::Role::Primary, true, true);
+  box.exec();
 
-  if (reply == QMessageBox::Yes)
+  if (box.clicked_button() == clear_button)
     this->clear_all();
 }
 
@@ -631,7 +635,7 @@ void GraphNodeWidget::on_graph_settings_request()
   // work on a copy of the model configuration before
   // apllying modifications
   GraphConfig       new_config = *gno->get_config_ref();
-  GraphConfigDialog model_config_editor(new_config);
+  GraphConfigDialog model_config_editor(new_config, this);
 
   int ret = model_config_editor.exec();
 
@@ -654,12 +658,18 @@ void GraphNodeWidget::on_new_graphics_node_request(const std::string &node_id,
 
   BaseNode *p_node = gno->get_node_ref_by_id<BaseNode>(node_id);
   if (!p_node)
-    throw std::runtime_error("Cannot display a missing model node.");
+  {
+    Logger::log()->warn(
+        "GraphNodeWidget::on_new_graphics_node_request: model node '{}' not found",
+        node_id);
+    return;
+  }
   auto *p_proxy = new HesiodNodeProxy(p_node->get_shared(), this);
   auto *widget = node_widget_factory(p_node->get_label(), p_node->get_shared(), this);
 
   this->add_node(p_proxy, scene_pos, node_id);
-  this->get_graphics_node_by_id(node_id)->set_widget(widget);
+  if (auto *gn = this->get_graphics_node_by_id(node_id))
+    gn->set_widget(widget);
 }
 
 std::string GraphNodeWidget::on_new_node_request(const std::string &node_type,
@@ -773,6 +783,12 @@ void GraphNodeWidget::on_node_right_clicked(const std::string &node_id, QPointF 
       return;
   }
 
+  this->show_node_context_menu(node_id, QCursor::pos());
+}
+
+void GraphNodeWidget::show_node_settings_popup(const std::string &node_id,
+                                               const QPoint      &global_pos)
+{
   // settings widget
   auto gno = this->p_graph_node.lock();
   if (!gno)
@@ -798,7 +814,7 @@ void GraphNodeWidget::on_node_right_clicked(const std::string &node_id, QPointF 
 
   menu->setWindowFlags(menu->windowFlags() | Qt::Popup);
   menu->setAttribute(Qt::WA_NoMousePropagation, false);
-  menu->popup(QCursor::pos());
+  menu->popup(global_pos);
 }
 
 void GraphNodeWidget::on_nodes_copy_request(const std::vector<std::string> &id_list,
@@ -1068,11 +1084,16 @@ void GraphNodeWidget::setup_connections()
                 this,
                 &GraphNodeWidget::on_viewport_request);
 
-  // GraphNodeWidget -> QApplication
+  // GraphNodeWidget -> QApplication (nothing to wait for when the graph is
+  // updated in the background)
   this->connect(this,
                 &GraphNodeWidget::update_started,
                 this,
-                []() { QApplication::setOverrideCursor(Qt::WaitCursor); });
+                []()
+                {
+                  if (!HSD_CTX.app_settings.node_editor.async_update)
+                    QApplication::setOverrideCursor(Qt::WaitCursor);
+                });
 
   this->connect(this,
                 &GraphNodeWidget::update_finished,
@@ -1080,6 +1101,16 @@ void GraphNodeWidget::setup_connections()
                 []() { QApplication::restoreOverrideCursor(); });
 
   // GraphNodeWidget -> GFX node
+  this->connect(this,
+                &GraphNodeWidget::compute_started,
+                this,
+                &GraphNodeWidget::on_compute_started);
+
+  this->connect(this,
+                &GraphNodeWidget::compute_finished,
+                this,
+                &GraphNodeWidget::on_compute_finished);
+
   this->connect(this,
                 &GraphNodeWidget::compute_finished,
                 this,

@@ -14,15 +14,22 @@
 #include "hesiod/model/graph/graph_config.hpp"
 #include "hesiod/model/graph/graph_manager.hpp"
 #include "hesiod/model/graph/graph_node.hpp"
+#include "hesiod/model/graph/graph_worker.hpp"
 #include "hesiod/model/utils.hpp"
 
 namespace hesiod
 {
 
-GraphManager::GraphManager(const std::string &id) : id(id)
+GraphManager::GraphManager(const std::string &id)
+    : id(id), worker(std::make_unique<GraphWorker>())
 {
   Logger::log()->trace("GraphManager::GraphManager: id: {}", id);
+
+  this->worker->failed = [this](std::exception_ptr error)
+  { this->on_update_failed(error); };
 }
+
+GraphManager::~GraphManager() = default;
 
 std::string GraphManager::add_graph_node(const std::shared_ptr<GraphNode> &p_graph_node,
                                          const std::string                &graph_id)
@@ -46,6 +53,7 @@ std::string GraphManager::add_graph_node(const std::shared_ptr<GraphNode> &p_gra
   // setup new graph node
   {
     p_graph_node->set_id(new_graph_id);
+    p_graph_node->set_p_worker(this->worker.get());
 
     // store a reference to the global storage of broadcasting data
     p_graph_node->set_p_broadcast_params(&broadcast_params);
@@ -75,6 +83,8 @@ void GraphManager::clear()
 {
   Logger::log()->trace("GraphManager::clear");
 
+  this->worker->cancel();
+
   for (auto &[_, graph] : this->graph_nodes)
     graph->clear();
 
@@ -87,6 +97,9 @@ void GraphManager::clear()
 void GraphManager::export_flatten()
 {
   Logger::log()->trace("GraphManager::export_flatten");
+
+  // what is exported has to be computed first
+  this->worker->finish();
 
   // create config
   auto export_cfg = GraphConfig();
@@ -227,6 +240,8 @@ GraphNode *GraphManager::get_graph_ref_by_id(const std::string &graph_id)
 
 std::string GraphManager::get_id() const { return this->id; }
 
+GraphWorker &GraphManager::get_worker() { return *this->worker; }
+
 std::shared_ptr<GraphManager> GraphManager::get_shared()
 {
   try
@@ -295,21 +310,41 @@ void GraphManager::json_from(nlohmann::json const &json, GraphConfig *p_config)
       // the Receive nodes, if any, need a reference to the
       // broadcast_params of the GraphManager, which is provided to the
       // graph node when added...
-      this->add_graph_node(graph, graph_id);
+      try
+      {
+        this->add_graph_node(graph, graph_id);
 
-      if (json.contains("graph_nodes") && json["graph_nodes"].contains(graph_id))
-      {
-        graph->json_from(json["graph_nodes"][graph_id], p_config);
+        if (json.contains("graph_nodes") && json["graph_nodes"].contains(graph_id))
+        {
+          graph->json_from(json["graph_nodes"][graph_id], p_config);
+        }
+        else
+        {
+          HSD_CTX.get_error_manager().push_error(
+              ErrorCategory::Deserialization,
+              std::format("Graph '{}': Missing key \"graph_nodes\" or \"{}\"",
+                          graph_id,
+                          graph_id));
+        }
       }
-      else
+      catch (const std::exception &e)
       {
-        Logger::log()->error("Missing key \"graph_nodes\" or \"{}\"", graph_id);
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::Deserialization,
+            std::format("Failed to add graph '{}': {}", graph_id, e.what()));
+      }
+      catch (...)
+      {
+        HSD_CTX.get_error_manager().push_error(
+            ErrorCategory::Deserialization,
+            std::format("Failed to add graph '{}': unknown error", graph_id));
       }
     }
   }
   else
   {
-    Logger::log()->error("Missing key \"graph_order\" in json");
+    HSD_CTX.get_error_manager().push_error(ErrorCategory::Deserialization,
+                                           "Missing key \"graph_order\" in json");
   }
 }
 
@@ -350,6 +385,11 @@ void GraphManager::on_broadcast_node_updated(const std::string &graph_id,
                                              const std::string &tag)
 {
   Logger::log()->trace("GraphManager::on_broadcast_node_updated: broadcasting {}", tag);
+
+  // a Broadcast updated in the background reports from the update thread
+  if (GraphWorker::in_update_thread())
+    return this->worker->post([this, graph_id, tag]()
+                              { this->on_broadcast_node_updated(graph_id, tag); });
 
   for (auto &[gid, graph] : this->graph_nodes)
   {
@@ -395,6 +435,8 @@ void GraphManager::remove_graph_node(const std::string &graph_id)
   if (this->is_graph_id_available(graph_id))
     return;
 
+  this->worker->cancel(this->get_graph_ref_by_id(graph_id));
+
   this->graph_order.erase(
       std::remove(this->graph_order.begin(), this->graph_order.end(), graph_id),
       this->graph_order.end());
@@ -409,6 +451,28 @@ void GraphManager::reseed(bool backward)
   for (auto &[_, graph] : this->graph_nodes)
     if (graph)
       graph->reseed(backward);
+}
+
+std::string GraphManager::runtime_info_to_string(const char separator) const
+{
+  std::string result;
+
+  for (const auto &graph_id : this->graph_order)
+  {
+    auto it = this->graph_nodes.find(graph_id);
+    if (it == this->graph_nodes.end() || !it->second)
+      continue;
+
+    std::string graph_info = it->second->runtime_info_to_string(separator);
+    if (!graph_info.empty())
+    {
+      if (!result.empty())
+        result += '\n';
+      result += graph_info;
+    }
+  }
+
+  return result;
 }
 
 void GraphManager::save_to_file(const std::string &fname) const
@@ -441,12 +505,24 @@ void GraphManager::update()
   // condition that makes continuing pointless (memory exhaustion above all).
   // Abandon the update and report it - never let it escape into the event loop,
   // where it would terminate the application.
-  std::string failure;
-
   try
   {
     for (auto &graph_id : this->graph_order)
       this->graph_nodes.at(graph_id)->update();
+  }
+  catch (...)
+  {
+    this->on_update_failed(std::current_exception());
+  }
+}
+
+void GraphManager::on_update_failed(std::exception_ptr error)
+{
+  std::string failure;
+
+  try
+  {
+    std::rethrow_exception(error);
   }
   catch (const std::bad_alloc &)
   {
@@ -461,9 +537,6 @@ void GraphManager::update()
   {
     failure = "The graph update was abandoned after an unknown error.";
   }
-
-  if (failure.empty())
-    return;
 
   Logger::log()->critical("GraphManager::update: {}", failure);
 

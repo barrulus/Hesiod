@@ -29,7 +29,7 @@ if(HESIOD_MINIMAL_NODE_SET)
       "${NODES_FCT_DIR}/gain.cpp"
       "${NODES_FCT_DIR}/hydraulic_stream_log.cpp"
       "${NODES_FCT_DIR}/export_heightmap.cpp"
-      "${NODES_FCT_DIR}/noise.cpp"
+      "${NODES_FCT_DIR}/coherent_noise.cpp"
       "${NODES_FCT_DIR}/preview.cpp"
       "${NODES_FCT_DIR}/receive.cpp"
       "${NODES_FCT_DIR}/smooth_cpulse.cpp"
@@ -75,6 +75,7 @@ target_link_libraries(
   PUBLIC hesiod_options
          hesiod_platform
          hesiod_qt_logging
+         hesiod_git_version
          args
          spdlog::spdlog
          nlohmann_json::nlohmann_json
@@ -91,6 +92,24 @@ target_link_libraries(
          qterrain-renderer
          qtexture_downloader
          ZLIB::ZLIB)
+
+# custom window chrome (frameless main window with native snap / resize)
+if(WIN32)
+  target_link_libraries(hesiod_core PUBLIC dwmapi)
+endif()
+
+# live interface scaling (ui_scale::apply_live) needs Qt's private high-DPI API;
+# without it the scale setting falls back to applying on restart
+find_package(Qt6 QUIET COMPONENTS GuiPrivate)
+if(TARGET Qt6::GuiPrivate)
+  target_link_libraries(hesiod_core PUBLIC Qt6::GuiPrivate)
+  target_compile_definitions(hesiod_core PUBLIC HSD_LIVE_UI_SCALE=1)
+  message(STATUS "Hesiod: live interface scaling enabled (Qt6::GuiPrivate)")
+else()
+  message(
+    STATUS
+      "Hesiod: Qt6::GuiPrivate not found, interface scale applies on restart")
+endif()
 
 # ------------------------------
 # Precompiled Headers (PCH)
