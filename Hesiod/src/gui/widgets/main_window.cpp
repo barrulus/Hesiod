@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QMessageBox>
 #include <QScreen>
 #include <QStatusBar>
@@ -13,6 +14,7 @@
 #include "hesiod/gui/widgets/window_chrome.hpp"
 #include "hesiod/logger.hpp"
 #include "hesiod/model/graph/graph_manager.hpp"
+#include "hesiod/model/graph/graph_worker.hpp"
 
 // last: windows.h leaks macros (interface, min, max...) that clash with the
 // project headers above
@@ -211,6 +213,29 @@ bool MainWindow::nativeEvent(const QByteArray &event_type, void *message, qintpt
 #endif
 
   return QMainWindow::nativeEvent(event_type, message, result);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+  GraphManager *p_manager = HSD_CTX.project_model
+                                ? HSD_CTX.project_model->get_graph_manager_ref()
+                                : nullptr;
+
+  // what is left goes with the next edit
+  if (event->key() == Qt::Key_Escape && p_manager && p_manager->get_worker().hold())
+  {
+    // clears the progress bar, after the progress still on its way
+    if (p_manager->update_progress)
+      p_manager->update_progress(100.f);
+
+    QMetaObject::invokeMethod(
+        this,
+        [this]() { this->notify("Update stopped, it goes on with the next edit"); },
+        Qt::QueuedConnection);
+    return;
+  }
+
+  QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::notify(const std::string &msg, int timeout)

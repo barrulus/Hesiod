@@ -216,6 +216,24 @@ void GraphWorker::finish()
   }
 }
 
+bool GraphWorker::hold()
+{
+  const bool busy = this->thread.joinable() || !this->jobs.empty();
+
+  Logger::log()->trace("GraphWorker::hold: busy={}", busy);
+
+  this->held = true;
+
+  // without waiting: the node being computed ends in the background
+  if (this->thread.joinable())
+  {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    this->cancelled = true;
+    this->cv.notify_one();
+  }
+  return busy;
+}
+
 bool GraphWorker::in_update_thread() { return is_update_thread; }
 
 std::deque<GraphWorker::Job>::iterator GraphWorker::find_job(const GraphNode &graph)
@@ -272,6 +290,8 @@ bool GraphWorker::request(GraphNode &graph, const std::vector<std::string> *p_no
     this->cv.notify_one();
   }
 
+  this->held = false;
+
   // not before the caller is done with the graphs
   this->schedule_start_next();
   return true;
@@ -294,6 +314,9 @@ void GraphWorker::schedule_start_next()
 
 void GraphWorker::start_next()
 {
+  if (this->held)
+    return;
+
   while (!this->thread.joinable() && !this->jobs.empty())
   {
     Job job = std::move(this->jobs.front());

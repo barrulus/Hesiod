@@ -37,6 +37,9 @@ protected:
   // persist when the window is closed by the window manager
   void closeEvent(QCloseEvent *event) override;
 
+  // an Esc that no widget used stops the update in progress
+  void keyPressEvent(QKeyEvent *event) override;
+
   bool nativeEvent(const QByteArray &event_type, void *message, qintptr *result) override;
 
 private:
