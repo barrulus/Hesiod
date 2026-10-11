@@ -30,6 +30,17 @@
 namespace hesiod
 {
 
+// The 3D view does not need a vertex per pixel: a 4K heightmap is a 16M vertex
+// mesh, slow to build on every selection. Capped by viewer.mesh_resolution.
+glm::ivec2 mesh_shape(const glm::ivec2 &shape)
+{
+  const int cap = HSD_CTX.app_settings.viewer.mesh_resolution;
+  const int n = std::max(shape.x, shape.y);
+  if (cap <= 0 || n <= cap)
+    return shape;
+  return {std::max(2, shape.x * cap / n), std::max(2, shape.y * cap / n)};
+}
+
 // 1 port
 template <typename T, typename F>
 bool helper_try_set_from_port(const BaseNode       &node,
@@ -402,14 +413,15 @@ void Viewer3D::update_renderer()
           typeid(hmap::VirtualArray),
           [this, p_node](const hmap::VirtualArray &h)
           {
-            auto arr = h.to_array(p_node->cfg().cm_cpu);
+            const glm::ivec2 shape = mesh_shape(h.shape);
+            auto             arr = h.to_array(shape, p_node->cfg().cm_cpu);
             if (this->p_renderer)
             {
               bool add_skirt = HSD_CTX.app_settings.viewer.add_heighmap_skirt;
 
               this->p_renderer->set_heightmap_geometry(arr.vector,
-                                                       h.shape.x,
-                                                       h.shape.y,
+                                                       shape.x,
+                                                       shape.y,
                                                        add_skirt);
             }
           }))
@@ -426,8 +438,9 @@ void Viewer3D::update_renderer()
           [this, p_node](const hmap::VirtualArray &h, const hmap::VirtualArray &w)
           {
             // TODO do this somewhere else?
-            auto ah = h.to_array(p_node->cfg().cm_cpu); // elevation
-            auto aw = w.to_array(p_node->cfg().cm_cpu); // water depth
+            const glm::ivec2 shape = mesh_shape(h.shape);
+            auto             ah = h.to_array(shape, p_node->cfg().cm_cpu); // elevation
+            auto             aw = w.to_array(shape, p_node->cfg().cm_cpu); // water depth
 
             // water elevation
             ah += aw;
@@ -436,8 +449,8 @@ void Viewer3D::update_renderer()
             // cells at the interface water/ground
             float dh = 1e3f;
 
-            for (int j = 0; j < h.shape.y; ++j)
-              for (int i = 0; i < h.shape.x; ++i)
+            for (int j = 0; j < shape.y; ++j)
+              for (int i = 0; i < shape.x; ++i)
               {
                 if (aw(i, j) <= 0.f)
                   ah(i, j) = 0.f;
@@ -450,8 +463,8 @@ void Viewer3D::update_renderer()
             // remove non-water cells
             float cut_value = -1e3f;
 
-            for (int j = 0; j < h.shape.y; ++j)
-              for (int i = 0; i < h.shape.x; ++i)
+            for (int j = 0; j < shape.y; ++j)
+              for (int i = 0; i < shape.x; ++i)
               {
                 if (ah(i, j) <= 0.f)
                   ah(i, j) = cut_value;
@@ -462,8 +475,8 @@ void Viewer3D::update_renderer()
             // send to renderer
             if (this->p_renderer)
               this->p_renderer->set_water_geometry(ah.vector,
-                                                   h.shape.x,
-                                                   h.shape.y,
+                                                   shape.x,
+                                                   shape.y,
                                                    cut_value);
           }))
   {

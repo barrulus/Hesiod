@@ -1001,6 +1001,16 @@ void AppSettingsWindow::setup_pages()
                   this->make_toggle(HSD_SETTING(bool, viewer.add_heighmap_skirt)),
                   false,
                   "3d mesh border sides base viewer");
+    this->add_row(
+        viewport,
+        "3D mesh resolution",
+        "Most vertices per side of the terrain mesh in the 3D view. Lower is "
+        "faster to show a node, the heightmap itself is not changed.",
+        this->make_choice(
+            HSD_SETTING(int, viewer.mesh_resolution),
+            {{512, "512"}, {1024, "1024"}, {2048, "2048"}, {0, "Full resolution"}}),
+        false,
+        "3d mesh density vertices detail viewer speed lag select");
     this->add_row(viewport,
                   "Toolbar size",
                   "Size of the viewport's floating toolbar, as a percentage.",
