@@ -537,24 +537,25 @@ void Viewer3D::update_renderer()
   }
 
   // trees
-  if (!helper_try_set_from_port<hmap::Forest>(*p_node,
-                                              this->view_param.port_ids.at("trees"),
-                                              typeid(hmap::Forest),
-                                              [this](const hmap::Forest &f)
-                                              {
-                                                if (this->p_renderer)
-                                                {
-                                                  QColor    qc(104, 159, 56, 255);
-                                                  glm::vec3 color(qc.redF(), qc.greenF(), qc.blueF());
+  if (!helper_try_set_from_port<hmap::Forest>(
+          *p_node,
+          this->view_param.port_ids.at("trees"),
+          typeid(hmap::Forest),
+          [this](const hmap::Forest &f)
+          {
+            if (this->p_renderer)
+            {
+              QColor    qc(104, 159, 56, 255);
+              glm::vec3 color(qc.redF(), qc.greenF(), qc.blueF());
 
-                                                  qtr::set_trees(*p_renderer,
-                                                                 f.get_x(),
-                                                                 f.get_y(),
-                                                                 f.get_z(),
-                                                                 f.get_radius(),
-                                                                 color);
-                                                }
-                                              }))
+              qtr::set_trees(*p_renderer,
+                             f.get_x(),
+                             f.get_y(),
+                             f.get_z(),
+                             f.get_radius(),
+                             color);
+            }
+          }))
   {
     this->p_renderer->reset_mesh(qtr::keys::mesh::trees);
   }

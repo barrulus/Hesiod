@@ -57,8 +57,8 @@ void setup_valley_head_node(BaseNode &node)
   add_float(node, A_MAX_WIDTH, "Max Width", 0.4f, 0.f, 1.f);
 
   node.set_current_category("Evolution");
-  add_float(node, A_DEPTH_LENGTH, "Depth Length", 0.5f, 0.001f, 1.f);
-  add_float(node, A_WIDTH_LENGTH, "Width Length", 0.5f, 0.001f, 1.f);
+  add_float(node, A_DEPTH_LENGTH, "Depth Length", 0.5f, 0.f, 1.f);
+  add_float(node, A_WIDTH_LENGTH, "Width Length", 0.5f, 0.f, 1.f);
   add_float(node, A_DEVELOPMENT_POWER, "Development Power", 1.f, 0.01f, 4.f);
   add_float(node, A_PROFILE_POWER, "Profile Power", 1.3f, 0.01f, 4.f);
 
