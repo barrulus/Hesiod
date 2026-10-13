@@ -181,6 +181,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"ColorizeBivariate", "Texture"},
       {"ColorizeGradient", "Texture"},
       {"ColorizeSolid", "Texture"},
+      {"ColorizeTerrain", "Texture"},
       {"CombineMask", "Terrain Features/Mask Operations"},
       {"Compare", "Debug"},
       {"Cone", "Primitive/Function"},
@@ -476,6 +477,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(ColorizeBivariate, colorize_bivariate);
     SETUP_NODE(ColorizeGradient, colorize_gradient);
     SETUP_NODE(ColorizeSolid, colorize_solid);
+    SETUP_NODE(ColorizeTerrain, colorize_terrain);
     SETUP_NODE(CombineMask, combine_mask);
     SETUP_NODE(Compare, compare);
     SETUP_NODE(Cone, cone);
