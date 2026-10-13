@@ -7930,72 +7930,96 @@
     },
     "FlowStream": {
         "category": "WIP",
-        "description": "TODO",
+        "description": "Simulates river flow streams from source locations down the heightmap using an intermediate triangular mesh, then carves river channels and riverbanks into the terrain.",
         "label": "FlowStream",
         "parameter_groups": [
             {
                 "keys": [
+                    "seed",
+                    "control_points_count",
                     "elevation_ratio",
                     "distance_exponent",
                     "upward_penalization",
+                    "favor_domain_center"
+                ],
+                "name": "Pathfinding"
+            },
+            {
+                "keys": [
+                    "riverbed_slope",
+                    "depth"
+                ],
+                "name": "Riverbed Slope"
+            },
+            {
+                "keys": [
                     "riverbank_slope",
                     "river_radius",
-                    "depth",
                     "merging_radius",
-                    "riverbed_slope",
-                    "noise_ratio",
-                    "seed"
+                    "noise_ratio"
                 ],
-                "name": "main"
+                "name": "Riverbank Carving"
             }
         ],
         "parameters": {
+            "control_points_count": {
+                "description": "Number of control points sampled for the triangulation mesh.",
+                "key": "control_points_count",
+                "label": "Control Points Count",
+                "type": "Integer"
+            },
             "depth": {
-                "description": "TODO",
+                "description": "Maximum depth of the carved riverbed.",
                 "key": "depth",
-                "label": "depth",
+                "label": "Depth",
                 "type": "Float"
             },
             "distance_exponent": {
-                "description": "TODO",
+                "description": "Exponent applied to distance/elevation terms when evaluating path costs.",
                 "key": "distance_exponent",
-                "label": "distance_exponent",
+                "label": "Distance Exponent",
                 "type": "Float"
             },
             "elevation_ratio": {
-                "description": "TODO",
+                "description": "Weight given to elevation difference versus distance in the cost function.",
                 "key": "elevation_ratio",
-                "label": "elevation_ratio",
+                "label": "Elevation vs Slope Weight",
                 "type": "Float"
             },
+            "favor_domain_center": {
+                "description": "Biases flow paths toward passing through the center of the domain.",
+                "key": "favor_domain_center",
+                "label": "Favor Domain Center",
+                "type": "Bool"
+            },
             "merging_radius": {
-                "description": "TODO",
+                "description": "Radius over which river tributaries smoothly merge together.",
                 "key": "merging_radius",
-                "label": "merging_radius",
+                "label": "Merging Radius",
                 "type": "Float"
             },
             "noise_ratio": {
-                "description": "TODO",
+                "description": "Proportion of random noise perturbation applied along the riverbank carving.",
                 "key": "noise_ratio",
-                "label": "noise_ratio",
+                "label": "Noise Ratio",
                 "type": "Float"
             },
             "river_radius": {
-                "description": "TODO",
+                "description": "Width or radius of the carved river channel.",
                 "key": "river_radius",
-                "label": "river_radius",
+                "label": "River Radius",
                 "type": "Float"
             },
             "riverbank_slope": {
-                "description": "TODO",
+                "description": "Slope angle of the riverbank carving.",
                 "key": "riverbank_slope",
-                "label": "riverbank_slope",
+                "label": "Riverbank Slope",
                 "type": "Float"
             },
             "riverbed_slope": {
-                "description": "TODO",
+                "description": "Downstream longitudinal slope along the riverbed.",
                 "key": "riverbed_slope",
-                "label": "riverbed_slope",
+                "label": "Riverbed Slope",
                 "type": "Float"
             },
             "seed": {
@@ -8005,9 +8029,9 @@
                 "type": "Random seed number"
             },
             "upward_penalization": {
-                "description": "TODO",
+                "description": "Penalty factor applied to uphill elevation changes during pathfinding.",
                 "key": "upward_penalization",
-                "label": "upward_penalization",
+                "label": "Upward Penalization",
                 "type": "Float"
             }
         },
@@ -8015,25 +8039,25 @@
             "input": {
                 "caption": "input",
                 "data_type": "VirtualArray",
-                "description": "TODO",
+                "description": "Input heightmap terrain.",
                 "type": "input"
             },
             "output": {
                 "caption": "output",
                 "data_type": "VirtualArray",
-                "description": "TODO",
+                "description": "Output heightmap with carved river channels.",
                 "type": "output"
             },
             "river_mask": {
                 "caption": "river_mask",
                 "data_type": "VirtualArray",
-                "description": "TODO",
+                "description": "Output mask of the carved river channels.",
                 "type": "output"
             },
             "sources": {
                 "caption": "sources",
                 "data_type": "Cloud",
-                "description": "TODO",
+                "description": "Cloud of source coordinates from which flow streams originate.",
                 "type": "input"
             }
         }
