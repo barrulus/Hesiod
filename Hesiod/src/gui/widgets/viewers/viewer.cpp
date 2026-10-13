@@ -5,7 +5,6 @@
 #include <utility>
 
 #include <QGridLayout>
-#include <QGuiApplication>
 #include <QLabel>
 #include <QSignalBlocker>
 #include <QTimer>
@@ -236,15 +235,7 @@ void Viewer::on_node_selected(const std::string &new_id)
 
 void Viewer::follow_selection()
 {
-  // Showing a node is slow (the 3D mesh above all): a click that starts a
-  // drag is not held up by it, and the deselection and selection of one click
-  // make a single update
-  if (QGuiApplication::mouseButtons() != Qt::NoButton)
-  {
-    QTimer::singleShot(50, this, [this]() { this->follow_selection(); });
-    return;
-  }
-
+  // the deselection and selection of one click make a single update
   const auto target = std::exchange(this->selection_to_follow, std::nullopt);
   if (!target || this->is_node_pinned || *target == this->current_node_id)
     return;
