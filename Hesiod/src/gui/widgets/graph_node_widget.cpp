@@ -23,6 +23,7 @@
 #include "hesiod/gui/hesiod_node_proxy.hpp"
 #include "hesiod/gui/widgets/custom_qmenu.hpp"
 #include "hesiod/gui/widgets/graph_config_widgets/graph_config_dialog.hpp"
+#include "hesiod/gui/widgets/graph_controls.hpp"
 #include "hesiod/gui/widgets/graph_node_widget.hpp"
 #include "hesiod/gui/widgets/gui_utils.hpp"
 #include "hesiod/gui/widgets/message_dialog.hpp"
@@ -89,6 +90,10 @@ GraphNodeWidget::GraphNodeWidget(std::weak_ptr<GraphNode> p_graph_node, QWidget 
 
   // populate node catalog
   this->set_node_inventory(get_node_inventory());
+
+  // in place of GNodeGUI's toolbar (see GraphTabsWidget)
+  this->controls = new GraphControls(this);
+
   this->setup_connections();
 }
 
@@ -326,6 +331,9 @@ void GraphNodeWidget::json_from(nlohmann::json const &json)
   // Loading graphics is presentation-only; edit requests are not emitted.
   GraphViewer::json_from(gui_json);
 
+  if (json.contains("toolbar"))
+    this->controls->json_from(json["toolbar"]);
+
   // viewers (skipped in headless CLI modes, e.g. --snapshot: no 3D viewer is
   // created there, so there is nothing to restore state into)
   if (!HSD_CTX.headless && json.contains("viewers") && json["viewers"].is_array())
@@ -380,6 +388,7 @@ nlohmann::json GraphNodeWidget::json_to() const
 {
   Logger::log()->trace("GraphNodeWidget::json_to");
   nlohmann::json json = GraphViewer::json_to();
+  json["toolbar"] = this->controls->json_to();
 
   // add the viewports
   for (auto widget : this->data_viewers)

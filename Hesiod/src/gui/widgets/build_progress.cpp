@@ -11,6 +11,7 @@
 
 #include "hesiod/app/hesiod_application.hpp"
 #include "hesiod/gui/widgets/build_progress.hpp"
+#include "hesiod/gui/widgets/rail/tool_rail.hpp"
 
 namespace hesiod
 {
@@ -33,6 +34,15 @@ BuildProgress::BuildProgress(QWidget *area, std::function<void()> resume)
 
   this->hide();
   area->installEventFilter(this);
+
+  // the toolbar of the editor, to keep clear of
+  for (QWidget *child : area->findChildren<QWidget *>())
+    if (auto *p_rail = dynamic_cast<rail::ToolRail *>(child))
+    {
+      this->rail = p_rail;
+      p_rail->installEventFilter(this);
+      break;
+    }
 }
 
 void BuildProgress::on_update_started()
@@ -89,7 +99,7 @@ void BuildProgress::on_update_finished()
 
 bool BuildProgress::eventFilter(QObject *watched, QEvent *event)
 {
-  if (watched == this->area &&
+  if ((watched == this->area || watched == this->rail.data()) &&
       (event->type() == QEvent::Resize || event->type() == QEvent::Move))
     this->place();
   return false;
@@ -174,7 +184,18 @@ void BuildProgress::place()
       this->area->width() - 2 * h);
 
   const QRect a = this->area->geometry();
-  this->setGeometry(a.center().x() - w / 2, a.bottom() - h - h / 2, w, h);
+  int y = a.bottom() - h - h / 2;
+
+  // above the toolbar when it is docked to the bottom
+  if (this->rail && this->rail->get_edge() == rail::Edge::Bottom)
+  {
+    const QPoint offset = this->rail->parentWidget()->mapTo(this->parentWidget(),
+                                                            QPoint(0, 0));
+    const QRect  docked = this->rail->docked_rect().toAlignedRect().translated(offset);
+    y = std::min(y, docked.top() - h - h / 4);
+  }
+
+  this->setGeometry(a.center().x() - w / 2, y, w, h);
 }
 
 void BuildProgress::refresh()

@@ -15,6 +15,7 @@ namespace hesiod
 {
 
 class GraphNode; // forward
+class GraphControls;
 class GraphEditor;
 class Viewer;
 
@@ -136,6 +137,7 @@ private:
   std::filesystem::path          last_import_path;
   std::vector<std::string>       selected_ids;
   QPointer<Viewer>               preview_viewer;
+  GraphControls                 *controls = nullptr; // its toolbar, own by this
 };
 
 } // namespace hesiod

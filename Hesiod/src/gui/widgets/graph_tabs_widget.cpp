@@ -35,6 +35,7 @@ GraphTabsWidget::GraphTabsWidget(std::weak_ptr<GraphManager> p_graph_manager,
   AppContext &ctx = HSD_CTX;
 
   // styles (GNodeGUI)
+  GN_STYLE->viewer.add_toolbar = false; // see GraphControls
   GN_STYLE->viewer.add_new_icon = false;
   GN_STYLE->viewer.add_load_save_icons = false;
   GN_STYLE->viewer.add_group = ctx.app_settings.node_editor.enable_node_groups;
