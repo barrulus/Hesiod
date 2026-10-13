@@ -69,6 +69,22 @@ void DataPreview::clear_preview()
   this->update();
 }
 
+void DataPreview::dim_preview()
+{
+  if (this->preview_pixmap.isNull())
+    return;
+
+  QPixmap dimmed(this->preview_pixmap.size());
+  dimmed.fill(Qt::transparent);
+
+  QPainter painter(&dimmed);
+  painter.setOpacity(0.35f);
+  painter.drawPixmap(0, 0, this->preview_pixmap);
+  painter.end();
+
+  this->setPixmap(dimmed);
+}
+
 void DataPreview::contextMenuEvent(QContextMenuEvent *event)
 {
   auto p_model = this->model.lock();

@@ -1,10 +1,10 @@
-# Hesiod
+# Hesiod - https://hesiodengine.com
 
 A desktop application for node-based procedural terrain generation.
-- binaries: https://sourceforge.net/projects/hesiod
+- binaries: https://hesiodengine.com/#download
 - Discord: https://discord.gg/HBgFCjdV8W
-- tutorial videos (WIP): https://www.youtube.com/playlist?list=PLvla2FXp5tDxbPypf_Mp66gWzX_Lga3DK
-- documentation (WIP): https://hesioddoc.readthedocs.io
+- tutorial videos (WIP): https://www.youtube.com/@Hesiod-s9n
+- documentation (WIP): https://hesiodengine.com/docs/
 - roadmap: https://github.com/otto-link/Hesiod/discussions/608
 
 >[!WARNING] 
@@ -70,6 +70,9 @@ There are also required external dependencies for ubuntu you can execute:
 ```
 sudo apt-get -y install libglfw3 libglfw3-dev libglew-dev libopengl-dev freeglut3-dev libboost-all-dev libeigen3-dev libglm-dev fuse libfuse2 ocl-icd-opencl-dev libassimp-dev qt6-webengine-dev zlib1g-dev
 ```
+
+> [!NOTE]
+> AMD users on Linux may need to install `rocm-opencl` and `rocm-clinfo` for OpenCL compatibility.
 
 #### Getting the sources
 
