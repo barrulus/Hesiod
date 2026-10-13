@@ -960,6 +960,13 @@ void AppSettingsWindow::setup_pages()
                   false,
                   "timer duration compute time slow performance profile");
     this->add_row(editing,
+                  "Line around the editor while it builds",
+                  "Run a dashed line around the graph editor while its graph is "
+                  "updated, on top of the progress at the bottom of it.",
+                  this->make_toggle(HSD_SETTING(bool, node_editor.show_build_border)),
+                  false,
+                  "border outline dashed animation update build progress");
+    this->add_row(editing,
                   "Starting resolution",
                   "Heightmap resolution of new projects and new graphs. Change a "
                   "graph's own resolution from the viewport toolbar.",

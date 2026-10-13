@@ -16,6 +16,8 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
+#include "gnodegui/style.hpp"
+
 #include "hesiod/app/hesiod_application.hpp"
 #include "hesiod/gui/graph_editor.hpp"
 #include "hesiod/gui/hesiod_node_proxy.hpp"
@@ -1108,6 +1110,55 @@ void GraphNodeWidget::setup_connections()
                 this,
                 []() { QApplication::restoreOverrideCursor(); });
 
+  // While the nodes are not all at the same resolution (an update stopped half
+  // way after it changed), each shows the one of its data under it: in orange
+  // when it is not the graph's
+  const auto show_resolutions = [this]()
+  {
+    auto gno = this->p_graph_node.lock();
+    if (!gno || !gno->get_config_ref())
+      return;
+
+    const glm::ivec2 graph_shape = gno->get_config_ref()->shape;
+    bool             mixed = false;
+
+    for (const auto &[node_id, _] : gno->get_nodes())
+      if (BaseNode *p_node = gno->get_node_ref_by_id<BaseNode>(node_id))
+      {
+        const glm::ivec2 shape = p_node->get_computed_shape();
+        mixed |= shape.x > 0 && shape != graph_shape;
+      }
+
+    for (const auto &[node_id, _] : gno->get_nodes())
+    {
+      gngui::GraphicsNode *p_gfx_node = this->get_graphics_node_by_id(node_id);
+      BaseNode            *p_node = gno->get_node_ref_by_id<BaseNode>(node_id);
+      if (!p_gfx_node || !p_node)
+        continue;
+
+      const glm::ivec2 shape = p_node->get_computed_shape();
+      if (!mixed || shape.x == 0)
+      {
+        p_gfx_node->set_footer("");
+        continue;
+      }
+
+      const QString text = shape.x != shape.y ? QString("%1 × %2").arg(shape.x).arg(shape.y)
+                           : shape.x % 1024 == 0 ? QString("%1K").arg(shape.x / 1024)
+                                                 : QString::number(shape.x);
+
+      QColor quiet = GN_STYLE->node.color_caption;
+      quiet.setAlphaF(0.55f);
+      p_gfx_node->set_footer(text, shape == graph_shape ? quiet : QColor());
+    }
+  };
+
+  this->connect(this,
+                &GraphNodeWidget::compute_finished,
+                this,
+                [show_resolutions](const std::string &) { show_resolutions(); });
+  this->connect(this, &GraphNodeWidget::config_changed, this, show_resolutions);
+
   // GraphNodeWidget -> GFX node
   this->connect(this,
                 &GraphNodeWidget::compute_started,
@@ -1146,6 +1197,24 @@ void GraphNodeWidget::setup_connections()
   {
     if (safe_this)
       Q_EMIT safe_this->update_finished();
+  };
+
+  gno->update_steps =
+      [safe_this = QPointer(this)](const std::vector<std::string> &pass, int done)
+  {
+    if (!safe_this)
+      return;
+
+    QStringList ids;
+    for (const auto &id : pass)
+      ids << QString::fromStdString(id);
+    Q_EMIT safe_this->update_steps(ids, done);
+  };
+
+  gno->update_held = [safe_this = QPointer(this)](bool held)
+  {
+    if (safe_this)
+      Q_EMIT safe_this->update_held(held);
   };
 
   gno->compute_started = [safe_this = QPointer(this)](const std::string &node_id)

@@ -46,6 +46,8 @@ struct AppSettings
     QColor hover{"#8B8B8B"};
     QColor pressed{"#ABABAB"};
     QColor separator{"#ABABAB"};
+    QColor building{"#FFB86C"}; // a graph being updated
+    QColor warning{"#FF5555"};  // e.g. a graph left partly up to date
   } colors;
 
   struct Icons
@@ -161,6 +163,7 @@ struct AppSettings
     bool        live_update = false;
     bool        async_update = true;      // compute in the background, see GraphWorker
     bool        show_compute_time = true; // on each node, see Style::Node
+    bool        show_build_border = false; // around the editor while it updates
     float       port_radius = 7.f;
   } node_editor;
 

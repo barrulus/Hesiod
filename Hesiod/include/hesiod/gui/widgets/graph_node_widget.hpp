@@ -5,6 +5,7 @@
 
 #include <QImage>
 #include <QScrollArea>
+#include <QStringList>
 
 #include "gnodegui/graph_viewer.hpp"
 
@@ -79,6 +80,8 @@ signals:
   void update_started();
   void update_finished();
   void update_progress(const std::string &node_id, float progress);
+  void update_steps(QStringList pass, int done); // see GraphNode::update_steps
+  void update_held(bool held);
 
 public slots:
   void closeEvent(QCloseEvent *event) override;
