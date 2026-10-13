@@ -25412,6 +25412,7 @@
                 "keys": [
                     "angle",
                     "center",
+                    "min_depth",
                     "max_depth",
                     "min_width",
                     "max_width",
@@ -25506,6 +25507,12 @@
                 "description": "Maximum asymptotic channel half-width downstream in normalized domain units.",
                 "key": "max_width",
                 "label": "Max Width",
+                "type": "Float"
+            },
+            "min_depth": {
+                "description": "Initial incision depth at the valley head origin.",
+                "key": "min_depth",
+                "label": "Min Depth",
                 "type": "Float"
             },
             "min_width": {
