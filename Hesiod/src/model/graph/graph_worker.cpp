@@ -354,9 +354,24 @@ void GraphWorker::start_next()
     if (ids.empty())
       continue;
 
+    // left by a cancelled update of the whole graph, they would still be dirty and
+    // GNode does not update a node with dirty nodes upstream
+    if (!job.all)
+      for (const auto &node_id : ids)
+        graph->get_node(node_id)->is_dirty = false;
+
+    auto planned = job.all ? graph->topological_sort(ids)
+                           : graph->get_nodes_to_update(ids);
+
+    if (planned.empty())
+    {
+      if (graph->update_finished)
+        graph->update_finished();
+      continue;
+    }
+
     this->graph = graph;
-    this->planned = job.all ? graph->topological_sort(ids)
-                            : graph->get_nodes_to_update(ids);
+    this->planned = std::move(planned);
     this->started.clear();
     this->error = nullptr;
     this->go = false;
