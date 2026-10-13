@@ -107,6 +107,7 @@ void BaseNode::compute()
   try
   {
     this->compute_fct(*this);
+    this->computed_shape = this->cfg().shape;
   }
   catch (const std::bad_alloc &)
   {
