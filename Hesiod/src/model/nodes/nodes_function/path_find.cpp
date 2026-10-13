@@ -78,13 +78,14 @@ void compute_path_find_node(BaseNode &node)
 
   // --- Params
 
-  const auto   seed                 = static_cast<std::uint32_t>(node.val<int>(A_SEED));
-  const auto   control_points_count = static_cast<size_t>(node.val<int>(A_CONTROL_POINTS_COUNT));
-  const auto   favor_domain_center  = node.val<bool>(A_FAVOR_DOMAIN_CENTER);
-  const auto   smooth_path          = node.val<bool>(A_SMOOTH_PATH);
-  const auto   smooth_sampling      = node.val<int>(A_SMOOTH_SAMPLING);
-  const size_t n_waypoints          = p_waypoints->size();
-  const size_t n_segments           = p_waypoints->is_closed() ? n_waypoints : n_waypoints - 1;
+  const auto seed                 = static_cast<std::uint32_t>(node.val<int>(A_SEED));
+  const auto control_points_count = static_cast<size_t>(
+      node.val<int>(A_CONTROL_POINTS_COUNT));
+  const auto   favor_domain_center = node.val<bool>(A_FAVOR_DOMAIN_CENTER);
+  const auto   smooth_path         = node.val<bool>(A_SMOOTH_PATH);
+  const auto   smooth_sampling     = node.val<int>(A_SMOOTH_SAMPLING);
+  const size_t n_waypoints         = p_waypoints->size();
+  const size_t n_segments = p_waypoints->is_closed() ? n_waypoints : n_waypoints - 1;
 
   std::vector<hmap::Point> accumulated_points;
 
