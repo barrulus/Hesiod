@@ -115,6 +115,9 @@ void GraphWorker::cancel(const GraphNode *p_graph)
   std::erase_if(this->jobs,
                 [p_graph](const Job &job)
                 { return !p_graph || job.graph.lock().get() == p_graph; });
+
+  if (this->jobs.empty() && std::exchange(this->held, false) && this->held_changed)
+    this->held_changed(false); // nothing left to hold
 }
 
 void GraphWorker::end_pass()
@@ -200,6 +203,10 @@ void GraphWorker::end_pass()
     graph->update_finished();
   }
 
+  // stopped with hold(): the graph stays partly up to date until the next request
+  if (this->held && !this->jobs.empty() && this->held_changed)
+    this->held_changed(true);
+
   std::lock_guard<std::mutex> lock(this->mutex);
   this->cancelled = false;
 }
@@ -233,6 +240,33 @@ void GraphWorker::finish()
     if (graph->update_finished)
       graph->update_finished();
   }
+
+  if (std::exchange(this->held, false) && this->held_changed)
+    this->held_changed(false);
+}
+
+bool GraphWorker::hold()
+{
+  const bool busy = this->thread.joinable() || !this->jobs.empty();
+
+  Logger::log()->trace("GraphWorker::hold: busy={}", busy);
+
+  if (!busy)
+    return false;
+
+  this->held = true;
+
+  // without waiting: the node being computed ends in the background
+  if (this->thread.joinable())
+  {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    this->cancelled = true;
+    this->cv.notify_one();
+  }
+  else if (this->held_changed)
+    this->held_changed(true); // nothing running, what is queued waits
+
+  return true;
 }
 
 bool GraphWorker::in_update_thread() { return is_update_thread; }
@@ -315,6 +349,9 @@ bool GraphWorker::request(GraphNode &graph, const std::vector<std::string> *p_no
     this->cv.notify_one();
   }
 
+  if (std::exchange(this->held, false) && this->held_changed)
+    this->held_changed(false);
+
   // not before the caller is done with the graphs
   this->schedule_start_next();
   return true;
@@ -337,6 +374,9 @@ void GraphWorker::schedule_start_next()
 
 void GraphWorker::start_next()
 {
+  if (this->held)
+    return;
+
   while (!this->thread.joinable() && !this->jobs.empty())
   {
     Job job = std::move(this->jobs.front());
