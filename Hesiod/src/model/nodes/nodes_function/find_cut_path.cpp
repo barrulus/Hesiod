@@ -25,6 +25,7 @@ constexpr const char *A_START                 = "start";
 constexpr const char *A_END                   = "end";
 constexpr const char *A_CONTROL_POINTS_COUNT  = "control_points_count";
 constexpr const char *A_FAVOR_BOUNDARY_CENTER = "favor_boundary_center";
+constexpr const char *A_FAVOR_CENTER          = "favor_center";
 constexpr const char *A_FAVOR_LOWER_ELEVATION = "favor_lower_elevation";
 constexpr const char *A_FAVOR_SINKS           = "favor_sinks";
 constexpr const char *A_SMOOTH_PATH           = "smooth_path";
@@ -44,13 +45,19 @@ void setup_find_cut_path_node(BaseNode &node)
 
   // attribute(s)
   // clang-format off
+  node.set_current_category("Boundary");
   add_enum(node, A_START, "Start Boundary", enum_mappings.domain_boundary_map, "West");
   add_enum(node, A_END, "End Boundary", enum_mappings.domain_boundary_map, "East");
-  add_seed(node, A_SEED, "Seed");
-  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 4096, 100, 30000);
   add_bool(node, A_FAVOR_BOUNDARY_CENTER, "Favor Boundary Center", true);
   add_bool(node, A_FAVOR_LOWER_ELEVATION, "Favor Lower Elevation", true);
   add_bool(node, A_FAVOR_SINKS, "Favor Sinks (Local Minima)", true);
+
+  node.set_current_category("Shortest Path");
+  add_seed(node, A_SEED, "Seed");
+  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 4096, 100, 30000);
+  add_bool(node, A_FAVOR_CENTER, "Favor Domain Center", true);
+
+  node.set_current_category("Smoothing");
   add_bool(node, A_SMOOTH_PATH, "Enable Path Smoothing", false);
   add_int(node, A_SMOOTH_SAMPLING, "Samples", 32, 2, INT_MAX);
   // clang-format on
@@ -78,6 +85,7 @@ void compute_find_cut_path_node(BaseNode &node)
   const auto seed                  = static_cast<std::uint32_t>(node.val<int>(A_SEED));
   const auto control_points_count  = static_cast<size_t>(node.val<int>(A_CONTROL_POINTS_COUNT));
   const auto favor_boundary_center = node.val<bool>(A_FAVOR_BOUNDARY_CENTER);
+  const auto favor_center          = node.val<bool>(A_FAVOR_CENTER);
   const auto favor_lower_elevation = node.val<bool>(A_FAVOR_LOWER_ELEVATION);
   const auto favor_sinks           = node.val<bool>(A_FAVOR_SINKS);
   const auto smooth_path           = node.val<bool>(A_SMOOTH_PATH);
@@ -94,7 +102,8 @@ void compute_find_cut_path_node(BaseNode &node)
                                              control_points_count,
                                              favor_boundary_center,
                                              favor_lower_elevation,
-                                             favor_sinks);
+                                             favor_sinks,
+                                             favor_center);
 
   if (smooth_path)
   {

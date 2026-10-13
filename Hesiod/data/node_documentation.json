@@ -7094,12 +7094,12 @@
                 "keys": [
                     "start",
                     "end",
-                    "offset_ratio",
-                    "steps",
-                    "seed",
                     "favor_boundary_center",
                     "favor_lower_elevation",
                     "favor_sinks",
+                    "seed",
+                    "control_points_count",
+                    "favor_center",
                     "smooth_path",
                     "smooth_sampling"
                 ],
@@ -7107,6 +7107,12 @@
             }
         ],
         "parameters": {
+            "control_points_count": {
+                "description": "Number of control points sampled for the triangulation mesh.",
+                "key": "control_points_count",
+                "label": "Control Points Count",
+                "type": "Integer"
+            },
             "end": {
                 "description": "Boundary where the path ends.",
                 "key": "end",
@@ -7117,6 +7123,12 @@
                 "description": "Biases selection toward the center of the boundary when randomly picking the start and end points.",
                 "key": "favor_boundary_center",
                 "label": "Favor Boundary Center",
+                "type": "Bool"
+            },
+            "favor_center": {
+                "description": "Biases path finding to favor passing through the center of the domain.",
+                "key": "favor_center",
+                "label": "Favor Domain Center",
                 "type": "Bool"
             },
             "favor_lower_elevation": {
@@ -7131,12 +7143,6 @@
                 "label": "Favor Sinks (Local Minima)",
                 "type": "Bool"
             },
-            "offset_ratio": {
-                "description": "No description",
-                "key": "offset_ratio",
-                "label": "Midpoint Radius",
-                "type": "Float"
-            },
             "seed": {
                 "description": "Random seed number. The random seed is an offset to the randomized process. A different seed will produce a new result.",
                 "key": "seed",
@@ -7144,13 +7150,13 @@
                 "type": "Random seed number"
             },
             "smooth_path": {
-                "description": "No description",
+                "description": "Enables post-processing path decimation and B-spline smoothing.",
                 "key": "smooth_path",
                 "label": "Enable Path Smoothing",
                 "type": "Bool"
             },
             "smooth_sampling": {
-                "description": "No description",
+                "description": "Number of sample points used for path decimation smoothing.",
                 "key": "smooth_sampling",
                 "label": "Samples",
                 "type": "Integer"
@@ -7160,12 +7166,6 @@
                 "key": "start",
                 "label": "Start Boundary",
                 "type": "Enumeration"
-            },
-            "steps": {
-                "description": "No description",
-                "key": "steps",
-                "label": "Search Steps",
-                "type": "Integer"
             }
         },
         "ports": {
