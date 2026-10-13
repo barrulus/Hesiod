@@ -767,7 +767,7 @@ void BaseNode::propagate_config_change()
                                        cfg.tile_shape,
                                        cfg.halo,
                                        cfg.storage_mode);
-          p_v->copy_from(va, cfg.cm_cpu);
+          p_v->copy_from(va, cfg.cm_cpu, false); // no data to copy, tiles come on demand
         }
       }
     }
