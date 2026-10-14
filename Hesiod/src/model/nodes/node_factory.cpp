@@ -194,6 +194,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"DepositionFillHoles", "Erosion/Deposition"},
       {"DepressionFilling", "Erosion/Deposition"},
       {"DirectionalBlur", "Filter/Smoothing"},
+      {"DistanceShaper", "Terrain Features/Morphology"},
       {"DistanceTransform", "Terrain Features/Morphology"},
       {"ExpandShrink", "Filter/Recast"},
       {"ExportAsset", "Export"},
@@ -488,6 +489,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(DepositionFillHoles, deposition_fill_holes);
     SETUP_NODE(DepressionFilling, depression_filling);
     SETUP_NODE(DirectionalBlur, directional_blur);
+    SETUP_NODE(DistanceShaper, distance_shaper);
     SETUP_NODE(DistanceTransform, distance_transform);
     SETUP_NODE(ExpandShrink, expand_shrink);
     SETUP_NODE(ExportAsset, export_asset);
