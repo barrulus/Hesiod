@@ -5,6 +5,7 @@
 #include <cmath>
 #include <numbers>
 
+#include "highmap/colorize.hpp"
 #include "highmap/filters.hpp"
 #include "highmap/hydrology.hpp"
 #include "highmap/local_metrics.hpp"
@@ -114,15 +115,6 @@ struct Params
   uint32_t  seed;
   float     noise_scale, color_noise, detail, cavity;
 };
-
-// a shade of `c`: darker and richer for t < 0, lighter and duller for t > 0
-glm::vec3 shade(const glm::vec3 &c, float t)
-{
-  const float     luma = glm::dot(c, glm::vec3(0.299f, 0.587f, 0.114f));
-  const glm::vec3 grey(luma);
-  const glm::vec3 lit = c * (1.f + 0.4f * t);
-  return glm::mix(grey * (1.f + 0.4f * t), lit, 1.f - 0.3f * t);
-}
 
 glm::vec3 rgb(const glm::vec4 &c) { return {c.r, c.g, c.b}; }
 
@@ -322,16 +314,19 @@ void terrain_texture(const hmap::Array         &z,
                                             0.08f * nf,
                                         0.42f,
                                         0.58f);
-    glm::vec3   col = glm::mix(shade(p.grass, cn * (0.3f * nm + 0.3f * nf + 0.2f * ng)),
-                             shade(p.dry, cn * (0.3f * nm + 0.3f * nf + 0.2f * ng)),
-                             dry);
+    glm::vec3   col = glm::mix(
+        hmap::shade_color(p.grass, cn * (0.3f * nm + 0.3f * nf + 0.2f * ng)),
+        hmap::shade_color(p.dry, cn * (0.3f * nm + 0.3f * nf + 0.2f * ng)),
+        dry);
 
     // soil on moderate slopes and bare bumps
     const float soil = hmap::smoothstep3(s + 0.2f * nm + 0.1f * nf +
                                              0.25f * std::max(c, 0.f),
                                          0.35f,
                                          0.6f);
-    col = glm::mix(col, shade(p.soil, cn * (0.25f * rl + 0.3f * nm + 0.15f * ng)), soil);
+    col              = glm::mix(col,
+                   hmap::shade_color(p.soil, cn * (0.25f * rl + 0.3f * nm + 0.15f * ng)),
+                   soil);
 
     // sediment along the drainage lines and in crisp deposits
     const float t0 = 0.8f - 0.5f * p.flow_width;
@@ -339,7 +334,10 @@ void terrain_texture(const hmap::Array         &z,
     sed       = std::max(sed,
                    p.deposition * hmap::smoothstep3(deposit[k] + 0.15f * nf, 0.4f, 0.8f));
     sed *= 1.f - hmap::smoothstep3(s, 0.6f, 1.f);
-    col = glm::mix(col, shade(p.sediment, cn * (0.4f * nf + 0.2f * nm + 0.2f * ng)), sed);
+    col = glm::mix(
+        col,
+        hmap::shade_color(p.sediment, cn * (0.4f * nf + 0.2f * nm + 0.2f * ng)),
+        sed);
 
     // rock on steep ground: ragged edges, strata, a hint of rills
     const float edge = p.rock_edge;
@@ -349,9 +347,10 @@ void terrain_texture(const hmap::Array         &z,
                                          1.f + edge);
     const float band = std::sin(two_pi * (14.f * h + 0.4f * nl + 0.1f * nm));
     col              = glm::mix(col,
-                   shade(p.rock,
-                         0.35f * p.strata * band +
-                             cn * (0.2f * rl + 0.3f * nf + 0.15f * ng) + 0.25f * c),
+                   hmap::shade_color(p.rock,
+                                     0.35f * p.strata * band +
+                                         cn * (0.2f * rl + 0.3f * nf + 0.15f * ng) +
+                                         0.25f * c),
                    rock);
 
     // ridge colour spilling down the slopes
@@ -361,7 +360,7 @@ void terrain_texture(const hmap::Array         &z,
                                           0.65f) *
                         hmap::smoothstep3(s, 0.15f, 0.4f);
     col = glm::mix(col,
-                   shade(p.ridge, cn * (0.3f * nf + 0.15f * rl + 0.15f * ng)),
+                   hmap::shade_color(p.ridge, cn * (0.3f * nf + 0.15f * rl + 0.15f * ng)),
                    spill);
 
     // snow on high ground, sliding off the steep parts
@@ -370,7 +369,9 @@ void terrain_texture(const hmap::Array         &z,
                                              0.15f * std::max(0.f, s - 0.9f) - 0.05f * c,
                                          -0.04f,
                                          0.04f);
-    col = glm::mix(col, shade(p.snow, 0.15f * nf - 0.3f * std::max(-c, 0.f)), snow);
+    col = glm::mix(col,
+                   hmap::shade_color(p.snow, 0.15f * nf - 0.3f * std::max(-c, 0.f)),
+                   snow);
 
     // relief: dark gullies, crisp detail, grain, then a slow warm / cool drift
     col *= 1.f - p.cavity * 0.35f * std::clamp(-0.7f * c - 0.4f * r, 0.f, 1.f);
