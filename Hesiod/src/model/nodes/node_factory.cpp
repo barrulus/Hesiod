@@ -181,7 +181,6 @@ std::map<std::string, std::string> get_node_inventory()
       {"ColorizeBivariate", "Texture"},
       {"ColorizeGradient", "Texture"},
       {"ColorizeSolid", "Texture"},
-      {"ColorizeTerrain", "Texture"},
       {"CombineMask", "Terrain Features/Mask Operations"},
       {"Compare", "Debug"},
       {"Cone", "Primitive/Function"},
@@ -359,6 +358,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"StrataCells", "Erosion/Stratify"},
       {"StrataPlates", "Erosion/Stratify"},
       {"StrataTerrace", "Erosion/Stratify"},
+      {"TerrainTexture", "Texture"},
       {"TextureAdvectionParticle", "Texture"},
       {"TextureQuiltingExpand", "WIP"},  // , "Texture"},
       {"TextureQuiltingShuffle", "WIP"}, // , "Texture"},
@@ -478,7 +478,6 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(ColorizeBivariate, colorize_bivariate);
     SETUP_NODE(ColorizeGradient, colorize_gradient);
     SETUP_NODE(ColorizeSolid, colorize_solid);
-    SETUP_NODE(ColorizeTerrain, colorize_terrain);
     SETUP_NODE(CombineMask, combine_mask);
     SETUP_NODE(Compare, compare);
     SETUP_NODE(Cone, cone);
@@ -648,6 +647,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(StrataCells, strata_cells);
     SETUP_NODE(StrataPlates, strata_plates);
     SETUP_NODE(StrataTerrace, strata_terrace);
+    SETUP_NODE(TerrainTexture, terrain_texture);
     SETUP_NODE(TextureAdvectionParticle, texture_advection_particle);
     SETUP_NODE(TextureQuiltingExpand, texture_quilting_expand);
     SETUP_NODE(TextureQuiltingShuffle, texture_quilting_shuffle);

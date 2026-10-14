@@ -53,7 +53,7 @@ constexpr const char *A_CAVITY        = "cavity";
 // Setup
 // -----------------------------------------------------------------------------
 
-void setup_colorize_terrain_node(BaseNode &node)
+void setup_terrain_texture_node(BaseNode &node)
 {
   Logger::log()->trace("setup node {}", node.get_label());
 
@@ -156,11 +156,11 @@ glm::vec3 shade(const glm::vec3 &c, float t)
 
 glm::vec3 rgb(const glm::vec4 &c) { return {c.r, c.g, c.b}; }
 
-void colorize_terrain(const hmap::Array         &z,
-                      const hmap::Array         *p_deposition,
-                      const Params              &p,
-                      const glm::vec4           &bbox,
-                      std::vector<hmap::Array *> rgba)
+void terrain_texture(const hmap::Array         &z,
+                     const hmap::Array         *p_deposition,
+                     const Params              &p,
+                     const glm::vec4           &bbox,
+                     std::vector<hmap::Array *> rgba)
 {
   const glm::ivec2 shape = z.shape;
   const int        nx    = shape.x;
@@ -415,7 +415,7 @@ void colorize_terrain(const hmap::Array         &z,
 
 } // namespace
 
-void compute_colorize_terrain_node(BaseNode &node)
+void compute_terrain_texture_node(BaseNode &node)
 {
   Logger::log()->trace("computing node [{}]/[{}]", node.get_label(), node.get_id());
 
@@ -466,7 +466,7 @@ void compute_colorize_terrain_node(BaseNode &node)
            const hmap::TileRegion          &region)
       {
         auto [pa_z, pa_dep] = unpack<2>(p_arrays_in);
-        colorize_terrain(*pa_z, pa_dep, p, region.bbox, p_arrays_out);
+        terrain_texture(*pa_z, pa_dep, p, region.bbox, p_arrays_out);
       },
       node.cfg().cm_single_array);
 }
