@@ -21,6 +21,7 @@ namespace hesiod
 
 constexpr const char *P_ELEVATION  = "elevation";
 constexpr const char *P_DEPOSITION = "deposition";
+constexpr const char *P_NOISE      = "noise";
 constexpr const char *P_TEXTURE    = "texture";
 
 constexpr const char *A_GRASS    = "grass";
@@ -59,6 +60,7 @@ void setup_terrain_texture_node(BaseNode &node)
 
   node.add_port<hmap::VirtualArray>(gnode::PortType::IN, P_ELEVATION);
   node.add_port<hmap::VirtualArray>(gnode::PortType::IN, P_DEPOSITION);
+  node.add_port<hmap::VirtualArray>(gnode::PortType::IN, P_NOISE);
   node.add_port<hmap::VirtualTexture>(gnode::PortType::OUT, P_TEXTURE, CONFIG_TEX(node));
 
   // --- Attributes
@@ -84,7 +86,7 @@ void setup_terrain_texture_node(BaseNode &node)
   add_float(node, A_FLOW_WIDTH, "Channel Width", 0.5f, 0.f, 1.f);
   add_float(node, A_DEPOSITION, "Deposition", 0.5f, 0.f, 1.f);
   add_float(node, A_SNOW_LINE, "Snow Line", 0.85f, 0.f, 1.f);
-  add_float(node, A_SNOW_AMOUNT, "Snow", 0.f, 0.f, 1.f);
+  add_float(node, A_SNOW_AMOUNT, "Snow", 1.f, 0.f, 1.f);
 
   node.set_current_category("Variation");
   add_seed(node, A_SEED);
@@ -111,9 +113,10 @@ void compute_terrain_texture_node(BaseNode &node)
 
   // --- Inputs / Outputs
 
-  const auto *p_z   = node.get_value_ref<hmap::VirtualArray>(P_ELEVATION);
-  const auto *p_dep = node.get_value_ref<hmap::VirtualArray>(P_DEPOSITION);
-  auto       *p_tex = node.get_value_ref<hmap::VirtualTexture>(P_TEXTURE);
+  const auto *p_z     = node.get_value_ref<hmap::VirtualArray>(P_ELEVATION);
+  const auto *p_dep   = node.get_value_ref<hmap::VirtualArray>(P_DEPOSITION);
+  const auto *p_noise = node.get_value_ref<hmap::VirtualArray>(P_NOISE);
+  auto       *p_tex   = node.get_value_ref<hmap::VirtualTexture>(P_TEXTURE);
 
   if (!p_z)
     return;
@@ -149,14 +152,20 @@ void compute_terrain_texture_node(BaseNode &node)
 
   // fall lines and drainage cross tile borders: work on the whole map at once
   hmap::for_each_tile(
-      {p_z, p_dep},
+      {p_z, p_dep, p_noise},
       p_tex->channels_ptr(),
       [&p](std::vector<const hmap::Array *> p_arrays_in,
            std::vector<hmap::Array *>       p_arrays_out,
            const hmap::TileRegion          &region)
       {
-        auto [pa_z, pa_dep] = unpack<2>(p_arrays_in);
-        hmap::Texture tex = hmap::terrain_texture(*pa_z, pa_dep, p, region.bbox);
+        auto [pa_z, pa_dep, pa_noise] = unpack<3>(p_arrays_in);
+        hmap::Texture tex             = hmap::terrain_texture(*pa_z,
+                                                  pa_dep,
+                                                  p,
+                                                  region.bbox,
+                                                  0.f,
+                                                  -1.f,
+                                                  pa_noise);
 
         for (size_t ch = 0; ch < p_arrays_out.size() && ch < tex.channels.size(); ++ch)
           *p_arrays_out[ch] = std::move(tex.channels[ch]);
