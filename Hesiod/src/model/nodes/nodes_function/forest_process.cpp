@@ -22,10 +22,11 @@ constexpr const char *P_OUTPUT       = "output";
 constexpr const char *P_ELEVATION    = "elevation";
 constexpr const char *P_DENSITY_MASK = "density_mask";
 
-constexpr const char *A_SCALE_RADIUS     = "scale_radius";
-constexpr const char *A_PRUNE_COLLISIONS = "prune_collisions";
-constexpr const char *A_PRUNE_DENSITY    = "prune_density";
-constexpr const char *A_SEED             = "seed";
+constexpr const char *A_SCALE_RADIUS             = "scale_radius";
+constexpr const char *A_PRUNE_COLLISIONS         = "prune_collisions";
+constexpr const char *A_PRUNE_DENSITY            = "prune_density";
+constexpr const char *A_REINFORCE_CLASS_CLUSTERS = "reinforce_class_clusters";
+constexpr const char *A_SEED                     = "seed";
 
 void setup_forest_process_node(BaseNode &node)
 {
@@ -43,6 +44,7 @@ void setup_forest_process_node(BaseNode &node)
   add_float(node, A_SCALE_RADIUS, "Scale Radius", 1.0f, 0.0001f, 100.0f, "{:.2e}", true);
   add_bool(node, A_PRUNE_COLLISIONS, "Prune Collisions", false);
   add_float(node, A_PRUNE_DENSITY, "Prune Density", 1.0f, 0.0f, 1.0f);
+  add_int(node, A_REINFORCE_CLASS_CLUSTERS, "Reinforce Class Clusters", 0, 0, 16);
   add_seed(node, A_SEED, "Seed");
 }
 
@@ -64,10 +66,11 @@ void compute_forest_process_node(BaseNode &node)
 
   // --- Params
 
-  const auto scale_radius        = node.val<float>(A_SCALE_RADIUS);
-  const auto prune_collisions    = node.val<bool>(A_PRUNE_COLLISIONS);
-  const auto prune_density_ratio = node.val<float>(A_PRUNE_DENSITY);
-  const auto base_seed           = static_cast<uint32_t>(node.val<int>(A_SEED));
+  const auto scale_radius             = node.val<float>(A_SCALE_RADIUS);
+  const auto prune_collisions         = node.val<bool>(A_PRUNE_COLLISIONS);
+  const auto prune_density_ratio      = node.val<float>(A_PRUNE_DENSITY);
+  const auto reinforce_class_clusters = node.val<int>(A_REINFORCE_CLASS_CLUSTERS);
+  const auto base_seed                = static_cast<uint32_t>(node.val<int>(A_SEED));
 
   // --- Set elevation from heightmap (optional input)
 
@@ -137,6 +140,13 @@ void compute_forest_process_node(BaseNode &node)
   if (prune_collisions && !p_out_forest->empty())
   {
     p_out_forest->prune_collisions();
+  }
+
+  // --- Reinforce class clusters
+
+  if (reinforce_class_clusters > 0 && !p_out_forest->empty())
+  {
+    p_out_forest->reinforce_class_clusters(static_cast<size_t>(reinforce_class_clusters));
   }
 }
 
