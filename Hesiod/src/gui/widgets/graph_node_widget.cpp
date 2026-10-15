@@ -650,7 +650,8 @@ void GraphNodeWidget::on_graph_settings_request()
 
   int ret = model_config_editor.exec();
 
-  if (ret)
+  // unchanged, the whole graph would still be stopped, reallocated and rebuilt
+  if (ret && new_config.json_to() != gno->get_config_ref()->json_to())
     this->apply_new_config(new_config);
 }
 
