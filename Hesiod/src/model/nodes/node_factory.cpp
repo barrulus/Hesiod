@@ -170,7 +170,9 @@ std::map<std::string, std::string> get_node_inventory()
       {"CloudSetValues", "Geometry/Cloud"},
       {"CloudShuffle", "Geometry/Cloud"},
       {"CloudToArrayInterp", "Geometry/Cloud"},
+      {"CloudToForest", "Flora"},
       {"CloudToPath", "Geometry/Cloud"},
+      {"CloudToRocks", "Rock"},
       {"CloudToVectors", "Geometry/Cloud"},
       {"CoastalErosionDiffusion", "Erosion/Water"},
       {"CoastalErosionProfile", "Erosion/Water"},
@@ -469,7 +471,9 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(CloudSetValues, cloud_set_values);
     SETUP_NODE(CloudShuffle, cloud_shuffle);
     SETUP_NODE(CloudToArrayInterp, cloud_to_array_interp);
+    SETUP_NODE(CloudToForest, cloud_to_forest);
     SETUP_NODE(CloudToPath, cloud_to_path);
+    SETUP_NODE(CloudToRocks, cloud_to_rocks);
     SETUP_NODE(CloudToVectors, cloud_to_vectors);
     SETUP_NODE(CoastalErosionDiffusion, coastal_erosion_diffusion);
     SETUP_NODE(CoastalErosionProfile, coastal_erosion_profile);

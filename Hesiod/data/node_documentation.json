@@ -2936,6 +2936,48 @@
             }
         }
     },
+    "CloudToForest": {
+        "category": "Flora",
+        "description": "CloudToForest convert a Cloud to a Forest, preserving point coordinates and attributes.",
+        "label": "CloudToForest",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "species_id",
+                    "default_radius"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "default_radius": {
+                "description": "Default tree radius assigned if point value is 0.",
+                "key": "default_radius",
+                "label": "Default Radius",
+                "type": "Float"
+            },
+            "species_id": {
+                "description": "Species identifier assigned to the generated trees.",
+                "key": "species_id",
+                "label": "Species ID",
+                "type": "Integer"
+            }
+        },
+        "ports": {
+            "cloud": {
+                "caption": "cloud",
+                "data_type": "Cloud",
+                "description": "Input cloud.",
+                "type": "input"
+            },
+            "forest": {
+                "caption": "forest",
+                "data_type": "Forest",
+                "description": "Output forest.",
+                "type": "output"
+            }
+        }
+    },
     "CloudToPath": {
         "category": "Geometry/Cloud",
         "description": "CloudToPath convert a Cloud to a Path.",
@@ -2974,6 +3016,48 @@
                 "caption": "path",
                 "data_type": "Path",
                 "description": "Output path.",
+                "type": "output"
+            }
+        }
+    },
+    "CloudToRocks": {
+        "category": "Rock",
+        "description": "CloudToRocks convert a Cloud to a RockField, preserving point coordinates and attributes.",
+        "label": "CloudToRocks",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "class_id",
+                    "default_radius"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "class_id": {
+                "description": "Class identifier assigned to the generated rocks.",
+                "key": "class_id",
+                "label": "Class ID",
+                "type": "Integer"
+            },
+            "default_radius": {
+                "description": "Default rock radius assigned if point value is 0.",
+                "key": "default_radius",
+                "label": "Default Radius",
+                "type": "Float"
+            }
+        },
+        "ports": {
+            "cloud": {
+                "caption": "cloud",
+                "data_type": "Cloud",
+                "description": "Input cloud.",
+                "type": "input"
+            },
+            "rock_field": {
+                "caption": "rock_field",
+                "data_type": "RockField",
+                "description": "Output rock field.",
                 "type": "output"
             }
         }
@@ -20121,6 +20205,220 @@
             }
         }
     },
+    "RockSimulation": {
+        "category": "Rock",
+        "description": "No description available",
+        "label": "RockSimulation",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "rock_count",
+                    "time_step",
+                    "max_steps",
+                    "gravity",
+                    "soil_friction",
+                    "rolling_resistance",
+                    "inter_rock_restitution",
+                    "min_velocity",
+                    "spawn_fraction",
+                    "respawn_out_of_bounds",
+                    "seed",
+                    "radius_min",
+                    "radius_max",
+                    "power_law_alpha",
+                    "resolve_collisions",
+                    "prune_collisions",
+                    "scatter_shape",
+                    "height_radius_ratio",
+                    "post_inverse",
+                    "post_gamma",
+                    "post_gain",
+                    "post_smoothing_radius",
+                    "post_remap",
+                    "post_saturate"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "gravity": {
+                "description": "No description",
+                "key": "gravity",
+                "label": "Gravity",
+                "type": "Float"
+            },
+            "height_radius_ratio": {
+                "description": "No description",
+                "key": "height_radius_ratio",
+                "label": "Height/Radius Ratio",
+                "type": "Float"
+            },
+            "inter_rock_restitution": {
+                "description": "No description",
+                "key": "inter_rock_restitution",
+                "label": "Restitution",
+                "type": "Float"
+            },
+            "max_steps": {
+                "description": "No description",
+                "key": "max_steps",
+                "label": "Max Steps",
+                "type": "Integer"
+            },
+            "min_velocity": {
+                "description": "No description",
+                "key": "min_velocity",
+                "label": "Min Velocity",
+                "type": "Float"
+            },
+            "post_gain": {
+                "description": "No description",
+                "key": "post_gain",
+                "label": "Gain",
+                "type": "Float"
+            },
+            "post_gamma": {
+                "description": "No description",
+                "key": "post_gamma",
+                "label": "Gamma",
+                "type": "Float"
+            },
+            "post_inverse": {
+                "description": "No description",
+                "key": "post_inverse",
+                "label": "Invert Output",
+                "type": "Bool"
+            },
+            "post_remap": {
+                "description": "No description",
+                "key": "post_remap",
+                "label": "Remap Range",
+                "type": "Value range"
+            },
+            "post_saturate": {
+                "description": "No description",
+                "key": "post_saturate",
+                "label": "Saturation Range",
+                "type": "Value range"
+            },
+            "post_smoothing_radius": {
+                "description": "No description",
+                "key": "post_smoothing_radius",
+                "label": "Smoothing Radius",
+                "type": "Float"
+            },
+            "power_law_alpha": {
+                "description": "No description",
+                "key": "power_law_alpha",
+                "label": "Power Law Alpha",
+                "type": "Float"
+            },
+            "prune_collisions": {
+                "description": "No description",
+                "key": "prune_collisions",
+                "label": "Prune Collisions",
+                "type": "Bool"
+            },
+            "radius_max": {
+                "description": "No description",
+                "key": "radius_max",
+                "label": "Max Radius",
+                "type": "Float"
+            },
+            "radius_min": {
+                "description": "No description",
+                "key": "radius_min",
+                "label": "Min Radius",
+                "type": "Float"
+            },
+            "resolve_collisions": {
+                "description": "No description",
+                "key": "resolve_collisions",
+                "label": "Resolve Collisions",
+                "type": "Bool"
+            },
+            "respawn_out_of_bounds": {
+                "description": "No description",
+                "key": "respawn_out_of_bounds",
+                "label": "Respawn Out of Bounds",
+                "type": "Bool"
+            },
+            "rock_count": {
+                "description": "No description",
+                "key": "rock_count",
+                "label": "Rock Count",
+                "type": "Integer"
+            },
+            "rolling_resistance": {
+                "description": "No description",
+                "key": "rolling_resistance",
+                "label": "Rolling Resistance",
+                "type": "Float"
+            },
+            "scatter_shape": {
+                "description": "No description",
+                "key": "scatter_shape",
+                "label": "Shape",
+                "type": "Enumeration"
+            },
+            "seed": {
+                "description": "No description",
+                "key": "seed",
+                "label": "Seed",
+                "type": "Random seed number"
+            },
+            "soil_friction": {
+                "description": "No description",
+                "key": "soil_friction",
+                "label": "Soil Friction",
+                "type": "Float"
+            },
+            "spawn_fraction": {
+                "description": "No description",
+                "key": "spawn_fraction",
+                "label": "Spawn Fraction",
+                "type": "Float"
+            },
+            "time_step": {
+                "description": "No description",
+                "key": "time_step",
+                "label": "Time Step",
+                "type": "Float"
+            }
+        },
+        "ports": {
+            "density": {
+                "caption": "density",
+                "data_type": "VirtualArray",
+                "description": "No description",
+                "type": "input"
+            },
+            "elevation": {
+                "caption": "elevation",
+                "data_type": "VirtualArray",
+                "description": "No description",
+                "type": "input"
+            },
+            "exclusion": {
+                "caption": "exclusion",
+                "data_type": "VirtualArray",
+                "description": "No description",
+                "type": "input"
+            },
+            "heightmap": {
+                "caption": "heightmap",
+                "data_type": "VirtualArray",
+                "description": "No description",
+                "type": "output"
+            },
+            "rock_field": {
+                "caption": "rock_field",
+                "data_type": "RockField",
+                "description": "No description",
+                "type": "output"
+            }
+        }
+    },
     "Rotate": {
         "category": "Operator/Transform",
         "description": "No description available",
@@ -27227,220 +27525,6 @@
                 "caption": "output",
                 "data_type": "VirtualArray",
                 "description": "Zoom heightmap.",
-                "type": "output"
-            }
-        }
-    },
-    "RockSimulation": {
-        "category": "Rock",
-        "description": "No description available",
-        "label": "RockSimulation",
-        "parameter_groups": [
-            {
-                "keys": [
-                    "rock_count",
-                    "time_step",
-                    "max_steps",
-                    "gravity",
-                    "soil_friction",
-                    "rolling_resistance",
-                    "inter_rock_restitution",
-                    "min_velocity",
-                    "spawn_fraction",
-                    "respawn_out_of_bounds",
-                    "seed",
-                    "radius_min",
-                    "radius_max",
-                    "power_law_alpha",
-                    "resolve_collisions",
-                    "prune_collisions",
-                    "scatter_shape",
-                    "height_radius_ratio",
-                    "post_inverse",
-                    "post_gamma",
-                    "post_gain",
-                    "post_smoothing_radius",
-                    "post_remap",
-                    "post_saturate"
-                ],
-                "name": "main"
-            }
-        ],
-        "parameters": {
-            "gravity": {
-                "description": "No description",
-                "key": "gravity",
-                "label": "Gravity",
-                "type": "Float"
-            },
-            "height_radius_ratio": {
-                "description": "No description",
-                "key": "height_radius_ratio",
-                "label": "Height/Radius Ratio",
-                "type": "Float"
-            },
-            "inter_rock_restitution": {
-                "description": "No description",
-                "key": "inter_rock_restitution",
-                "label": "Restitution",
-                "type": "Float"
-            },
-            "max_steps": {
-                "description": "No description",
-                "key": "max_steps",
-                "label": "Max Steps",
-                "type": "Integer"
-            },
-            "min_velocity": {
-                "description": "No description",
-                "key": "min_velocity",
-                "label": "Min Velocity",
-                "type": "Float"
-            },
-            "post_gain": {
-                "description": "No description",
-                "key": "post_gain",
-                "label": "Gain",
-                "type": "Float"
-            },
-            "post_gamma": {
-                "description": "No description",
-                "key": "post_gamma",
-                "label": "Gamma",
-                "type": "Float"
-            },
-            "post_inverse": {
-                "description": "No description",
-                "key": "post_inverse",
-                "label": "Invert Output",
-                "type": "Bool"
-            },
-            "post_remap": {
-                "description": "No description",
-                "key": "post_remap",
-                "label": "Remap Range",
-                "type": "Value range"
-            },
-            "post_saturate": {
-                "description": "No description",
-                "key": "post_saturate",
-                "label": "Saturation Range",
-                "type": "Value range"
-            },
-            "post_smoothing_radius": {
-                "description": "No description",
-                "key": "post_smoothing_radius",
-                "label": "Smoothing Radius",
-                "type": "Float"
-            },
-            "power_law_alpha": {
-                "description": "No description",
-                "key": "power_law_alpha",
-                "label": "Power Law Alpha",
-                "type": "Float"
-            },
-            "prune_collisions": {
-                "description": "No description",
-                "key": "prune_collisions",
-                "label": "Prune Collisions",
-                "type": "Bool"
-            },
-            "radius_max": {
-                "description": "No description",
-                "key": "radius_max",
-                "label": "Max Radius",
-                "type": "Float"
-            },
-            "radius_min": {
-                "description": "No description",
-                "key": "radius_min",
-                "label": "Min Radius",
-                "type": "Float"
-            },
-            "resolve_collisions": {
-                "description": "No description",
-                "key": "resolve_collisions",
-                "label": "Resolve Collisions",
-                "type": "Bool"
-            },
-            "respawn_out_of_bounds": {
-                "description": "No description",
-                "key": "respawn_out_of_bounds",
-                "label": "Respawn Out of Bounds",
-                "type": "Bool"
-            },
-            "rock_count": {
-                "description": "No description",
-                "key": "rock_count",
-                "label": "Rock Count",
-                "type": "Integer"
-            },
-            "rolling_resistance": {
-                "description": "No description",
-                "key": "rolling_resistance",
-                "label": "Rolling Resistance",
-                "type": "Float"
-            },
-            "scatter_shape": {
-                "description": "No description",
-                "key": "scatter_shape",
-                "label": "Shape",
-                "type": "Enumeration"
-            },
-            "seed": {
-                "description": "No description",
-                "key": "seed",
-                "label": "Seed",
-                "type": "Random seed number"
-            },
-            "soil_friction": {
-                "description": "No description",
-                "key": "soil_friction",
-                "label": "Soil Friction",
-                "type": "Float"
-            },
-            "spawn_fraction": {
-                "description": "No description",
-                "key": "spawn_fraction",
-                "label": "Spawn Fraction",
-                "type": "Float"
-            },
-            "time_step": {
-                "description": "No description",
-                "key": "time_step",
-                "label": "Time Step",
-                "type": "Float"
-            }
-        },
-        "ports": {
-            "density": {
-                "caption": "density",
-                "data_type": "VirtualArray",
-                "description": "No description",
-                "type": "input"
-            },
-            "elevation": {
-                "caption": "elevation",
-                "data_type": "VirtualArray",
-                "description": "No description",
-                "type": "input"
-            },
-            "exclusion": {
-                "caption": "exclusion",
-                "data_type": "VirtualArray",
-                "description": "No description",
-                "type": "input"
-            },
-            "heightmap": {
-                "caption": "heightmap",
-                "data_type": "VirtualArray",
-                "description": "No description",
-                "type": "output"
-            },
-            "rock_field": {
-                "caption": "rock_field",
-                "data_type": "RockField",
-                "description": "No description",
                 "type": "output"
             }
         }
