@@ -20419,6 +20419,103 @@
             }
         }
     },
+    "RocksToHeightmap": {
+        "category": "Rock",
+        "description": "RocksToHeightmap converts a RockField into a heightmap by accumulating the elevation contribution of each rock.",
+        "label": "RocksToHeightmap",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "scatter_shape",
+                    "height_radius_ratio",
+                    "seed",
+                    "post_inverse",
+                    "post_gamma",
+                    "post_gain",
+                    "post_smoothing_radius",
+                    "post_remap",
+                    "post_saturate"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "height_radius_ratio": {
+                "description": "Ratio of rock maximum height relative to its radius.",
+                "key": "height_radius_ratio",
+                "label": "Height/Radius Ratio",
+                "type": "Float"
+            },
+            "post_gain": {
+                "description": "Post-processing gain.",
+                "key": "post_gain",
+                "label": "Gain",
+                "type": "Float"
+            },
+            "post_gamma": {
+                "description": "Post-processing gamma correction.",
+                "key": "post_gamma",
+                "label": "Gamma",
+                "type": "Float"
+            },
+            "post_inverse": {
+                "description": "Inverts output height values.",
+                "key": "post_inverse",
+                "label": "Invert Output",
+                "type": "Bool"
+            },
+            "post_remap": {
+                "description": "Remaps the output elevation range.",
+                "key": "post_remap",
+                "label": "Remap Range",
+                "type": "Value range"
+            },
+            "post_saturate": {
+                "description": "Saturates output values to range.",
+                "key": "post_saturate",
+                "label": "Saturation Range",
+                "type": "Value range"
+            },
+            "post_smoothing_radius": {
+                "description": "Smoothing radius applied to heightmap.",
+                "key": "post_smoothing_radius",
+                "label": "Smoothing Radius",
+                "type": "Float"
+            },
+            "scatter_shape": {
+                "description": "Object geometry shape.",
+                "key": "scatter_shape",
+                "label": "Shape",
+                "type": "Enumeration"
+            },
+            "seed": {
+                "description": "Random seed for procedural rock shapes.",
+                "key": "seed",
+                "label": "Seed",
+                "type": "Random seed number"
+            }
+        },
+        "ports": {
+            "heightmap": {
+                "caption": "heightmap",
+                "data_type": "VirtualArray",
+                "description": "Output heightmap accumulating rock elevations.",
+                "type": "output"
+            },
+            "rock_field": {
+                "caption": "rock_field",
+                "data_type": "RockField",
+                "description": "Input rock field.",
+                "type": "input"
+            },
+            "rock_map": {
+                "caption": "rock_map",
+                "data_type": "VirtualArray",
+                "description": "Output rock map.",
+                "type": "output"
+            }
+        }
+    },
     "Rotate": {
         "category": "Operator/Transform",
         "description": "No description available",

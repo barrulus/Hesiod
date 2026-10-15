@@ -327,6 +327,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"Rift", "Primitive/Geological"},
       {"Rifts", "Erosion/Hydraulic"},
       {"RockSimulation", "Rock"},
+      {"RocksToHeightmap", "Rock"},
       {"Rotate", "Operator/Transform"},
       {"RotateDisplacement", "Math"},
       {"Rugosity", "Terrain Features/Advanced"},
@@ -618,6 +619,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(Rift, rift);
     SETUP_NODE(Rifts, rifts);
     SETUP_NODE(RockSimulation, rock_simulation);
+    SETUP_NODE(RocksToHeightmap, rocks_to_heightmap);
     SETUP_NODE(Rotate, rotate);
     SETUP_NODE(RotateDisplacement, rotate_displacement);
     SETUP_NODE(Rugosity, rugosity);
