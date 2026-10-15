@@ -114,6 +114,7 @@ void compute_forest_process_node(BaseNode &node)
       dummy_mask.fill(1.0f, node.cfg().cm_cpu);
     }
 
+    // sequential is mandatory to avoid race condition
     auto cm = node.cfg().cm_cpu;
     cm.mode = hmap::ForEachMode::VA_SEQUENTIAL;
 
