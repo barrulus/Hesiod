@@ -247,8 +247,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"HydraulicSaleve", "Erosion/Hydraulic"},
       {"HydraulicSchott", "WIP"}, // "Erosion/Hydraulic"
       {"HydraulicStreamLog", "Erosion/Hydraulic"},
-      {"HydraulicStreamUpscaleAmplification", "WIP"}, // "Erosion/Hydraulic"
-      {"HydraulicVpipes", "WIP"},                     // "Erosion/Hydraulic"
+      {"HydraulicVpipes", "WIP"}, // "Erosion/Hydraulic"
       {"ImportHeightmap", "Export"},
       {"ImportTexture", "Export"},
       {"Inverse", "Math/Base"},
@@ -325,6 +324,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"Ridgelines", "Primitive/Authoring"},
       {"Rift", "Primitive/Geological"},
       {"Rifts", "Erosion/Hydraulic"},
+      {"RockSimulation", "Rock"},
       {"Rotate", "Operator/Transform"},
       {"RotateDisplacement", "Math"},
       {"Rugosity", "Terrain Features/Advanced"},
@@ -538,8 +538,6 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(HydraulicProcedural, hydraulic_procedural);
     SETUP_NODE(HydraulicSaleve, hydraulic_saleve);
     SETUP_NODE(HydraulicSchott, hydraulic_schott);
-    SETUP_NODE(HydraulicStreamUpscaleAmplification,
-               hydraulic_stream_upscale_amplification);
     SETUP_NODE(HydraulicVpipes, hydraulic_vpipes);
     SETUP_NODE(ImportHeightmap, import_heightmap);
     SETUP_NODE(ImportTexture, import_texture);
@@ -615,6 +613,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(Ridgelines, ridgelines);
     SETUP_NODE(Rift, rift);
     SETUP_NODE(Rifts, rifts);
+    SETUP_NODE(RockSimulation, rock_simulation);
     SETUP_NODE(Rotate, rotate);
     SETUP_NODE(RotateDisplacement, rotate_displacement);
     SETUP_NODE(Rugosity, rugosity);

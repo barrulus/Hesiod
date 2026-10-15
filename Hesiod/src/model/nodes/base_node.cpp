@@ -15,6 +15,7 @@
 #include "highmap/flora/forest.hpp"
 #include "highmap/geometry/cloud.hpp"
 #include "highmap/geometry/path.hpp"
+#include "highmap/rocks/rock_field.hpp"
 #include "highmap/virtual_array/virtual_array.hpp"
 
 #include "meta/ext/array/array.hpp"
@@ -40,6 +41,7 @@ std::string map_type_name(const std::string &typeid_name)
       {typeid(hmap::Array).name(), "Array"},
       {typeid(hmap::Cloud).name(), "Cloud"},
       {typeid(hmap::Forest).name(), "Forest"},
+      {typeid(hmap::RockField).name(), "RockField"},
       {typeid(hmap::VirtualArray).name(), "VirtualArray"},
       {typeid(hmap::VirtualTexture).name(), "VirtualTexture"},
       {typeid(hmap::Path).name(), "Path"},
@@ -509,6 +511,12 @@ float BaseNode::get_memory_usage() const
       auto *p_d = this->get_value_ref<hmap::Path>(k);
       if (p_d)
         count += sizeof(float) * 3 * p_d->size();
+    }
+    else if (this->get_data_type(k) == typeid(hmap::RockField).name())
+    {
+      auto *p_d = this->get_value_ref<hmap::RockField>(k);
+      if (p_d)
+        count += sizeof(hmap::ScatterItem) * p_d->size();
     }
   }
 

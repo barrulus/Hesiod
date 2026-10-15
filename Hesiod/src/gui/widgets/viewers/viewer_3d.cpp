@@ -10,6 +10,7 @@
 #include "highmap/geometry/path.hpp"
 #include "highmap/morphology.hpp"
 #include "highmap/range.hpp"
+#include "highmap/rocks/rock_field.hpp"
 
 #include "qtr/keys.hpp"
 #include "qtr/primitives.hpp"
@@ -123,7 +124,7 @@ ViewerNodeParam Viewer3D::get_default_view_param() const
       {"points", ""},
       {"path", ""},
       {"trees", "forest"},
-      // {"rocks", ""},
+      {"rocks", "rock_field"},
   };
 
   wp.icons = {
@@ -134,6 +135,7 @@ ViewerNodeParam Viewer3D::get_default_view_param() const
       {"points", HSD_ICON("scatter_plot")},
       {"path", HSD_ICON("conversion_path")},
       {"trees", HSD_ICON("forest")},
+      {"rocks", HSD_ICON("landslide")},
   };
 
   return wp;
@@ -154,6 +156,8 @@ bool Viewer3D::get_param_visibility_state(const std::string &param_name) const
     return this->p_renderer->is_mesh_visible(qtr::keys::mesh::path);
   else if (param_name == "trees")
     return this->p_renderer->is_mesh_visible(qtr::keys::mesh::trees);
+  else if (param_name == "rocks")
+    return this->p_renderer->is_mesh_visible(qtr::keys::mesh::rocks);
   else if (param_name == "color")
     return !this->p_renderer->get_bypass_texture_albedo();
   else if (param_name == "normal_map")
@@ -216,6 +220,8 @@ void Viewer3D::on_view_param_visibility_changed(const std::string &param_name,
     this->p_renderer->set_mesh_visible(qtr::keys::mesh::path, new_state);
   else if (param_name == "trees")
     this->p_renderer->set_mesh_visible(qtr::keys::mesh::trees, new_state);
+  else if (param_name == "rocks")
+    this->p_renderer->set_mesh_visible(qtr::keys::mesh::rocks, new_state);
   else if (param_name == "color")
     this->p_renderer->set_bypass_texture_albedo(!new_state);
   else if (param_name == "normal_map")
@@ -558,6 +564,30 @@ void Viewer3D::update_renderer()
           }))
   {
     this->p_renderer->reset_mesh(qtr::keys::mesh::trees);
+  }
+
+  // rocks
+  if (!helper_try_set_from_port<hmap::RockField>(
+          *p_node,
+          this->view_param.port_ids.at("rocks"),
+          typeid(hmap::RockField),
+          [this](const hmap::RockField &r)
+          {
+            if (this->p_renderer)
+            {
+              QColor    qc(80, 80, 80, 255);
+              glm::vec3 color(qc.redF(), qc.greenF(), qc.blueF());
+
+              qtr::set_rocks(*p_renderer,
+                             r.get_x(),
+                             r.get_y(),
+                             r.get_z(),
+                             r.get_radius(),
+                             color);
+            }
+          }))
+  {
+    this->p_renderer->reset_mesh(qtr::keys::mesh::rocks);
   }
 }
 
