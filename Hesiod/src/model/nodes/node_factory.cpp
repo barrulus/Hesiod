@@ -358,6 +358,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"StrataCells", "Erosion/Stratify"},
       {"StrataPlates", "Erosion/Stratify"},
       {"StrataTerrace", "Erosion/Stratify"},
+      {"TerrainTexture", "Texture"},
       {"TextureAdvectionParticle", "Texture"},
       {"TextureQuiltingExpand", "WIP"},  // , "Texture"},
       {"TextureQuiltingShuffle", "WIP"}, // , "Texture"},
@@ -646,6 +647,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(StrataCells, strata_cells);
     SETUP_NODE(StrataPlates, strata_plates);
     SETUP_NODE(StrataTerrace, strata_terrace);
+    SETUP_NODE(TerrainTexture, terrain_texture);
     SETUP_NODE(TextureAdvectionParticle, texture_advection_particle);
     SETUP_NODE(TextureQuiltingExpand, texture_quilting_expand);
     SETUP_NODE(TextureQuiltingShuffle, texture_quilting_shuffle);
