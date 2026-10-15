@@ -225,6 +225,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"FlowSimulationViscous", "WIP"}, // , "Hydrology"},
       {"FlowStream", "WIP"},            // Hydrology
       {"Fold", "Filter/Recast"},
+      {"ForestProcess", "Flora"},
       {"GaborWaveFbm", "Primitive/Coherent"},
       {"Gain", "Filter/Recurve"},
       {"GammaCorrection", "Filter/Recurve"},
@@ -327,6 +328,7 @@ std::map<std::string, std::string> get_node_inventory()
       {"Rift", "Primitive/Geological"},
       {"Rifts", "Erosion/Hydraulic"},
       {"RockSimulation", "Rock"},
+      {"RocksProcess", "Rock"},
       {"RocksToHeightmap", "Rock"},
       {"Rotate", "Operator/Transform"},
       {"RotateDisplacement", "Math"},
@@ -522,6 +524,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(FlowSimulationViscous, flow_simulation_viscous);
     SETUP_NODE(FlowStream, flow_stream);
     SETUP_NODE(Fold, fold);
+    SETUP_NODE(ForestProcess, forest_process);
     SETUP_NODE(GammaCorrection, gamma_correction);
     SETUP_NODE(GammaCorrectionLocal, gamma_correction_local);
     SETUP_NODE(GaussianDecay, gaussian_decay);
@@ -619,6 +622,7 @@ std::shared_ptr<gnode::Node> node_factory(const std::string         &node_type,
     SETUP_NODE(Rift, rift);
     SETUP_NODE(Rifts, rifts);
     SETUP_NODE(RockSimulation, rock_simulation);
+    SETUP_NODE(RocksProcess, rocks_process);
     SETUP_NODE(RocksToHeightmap, rocks_to_heightmap);
     SETUP_NODE(Rotate, rotate);
     SETUP_NODE(RotateDisplacement, rotate_displacement);

@@ -8437,6 +8437,74 @@
             }
         }
     },
+    "ForestProcess": {
+        "category": "Flora",
+        "description": "ForestProcess processes an existing Forest container (snaps elevation to terrain, scales radii, prunes collisions, and prunes by density mask).",
+        "label": "ForestProcess",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "scale_radius",
+                    "prune_collisions",
+                    "prune_density",
+                    "seed"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "prune_collisions": {
+                "description": "When enabled, eliminates overlapping trees by discarding smaller colliding trees.",
+                "key": "prune_collisions",
+                "label": "Prune Collisions",
+                "type": "Bool"
+            },
+            "prune_density": {
+                "description": "Target fraction of items to retain using density-based pruning.",
+                "key": "prune_density",
+                "label": "Prune Density",
+                "type": "Float"
+            },
+            "scale_radius": {
+                "description": "Scaling factor applied to tree radii.",
+                "key": "scale_radius",
+                "label": "Scale Radius",
+                "type": "Float"
+            },
+            "seed": {
+                "description": "Random seed for reproducible pruning.",
+                "key": "seed",
+                "label": "Seed",
+                "type": "Random seed number"
+            }
+        },
+        "ports": {
+            "density_mask": {
+                "caption": "density_mask",
+                "data_type": "VirtualArray",
+                "description": "Optional density mask for spatial retention pruning.",
+                "type": "input"
+            },
+            "elevation": {
+                "caption": "elevation",
+                "data_type": "VirtualArray",
+                "description": "Optional elevation heightmap to set tree heights.",
+                "type": "input"
+            },
+            "input": {
+                "caption": "input",
+                "data_type": "Forest",
+                "description": "Input forest.",
+                "type": "input"
+            },
+            "output": {
+                "caption": "output",
+                "data_type": "Forest",
+                "description": "Processed forest.",
+                "type": "output"
+            }
+        }
+    },
     "GaborWaveFbm": {
         "category": "Primitive/Coherent",
         "description": "Generates fractal Brownian motion (fBm) noise using Gabor wavelets, producing anisotropic textures with directional control.",
@@ -20415,6 +20483,74 @@
                 "caption": "rock_field",
                 "data_type": "RockField",
                 "description": "No description",
+                "type": "output"
+            }
+        }
+    },
+    "RocksProcess": {
+        "category": "Rock",
+        "description": "RocksProcess processes an existing RockField container (snaps elevation to terrain, scales radii, prunes collisions, and prunes by density mask).",
+        "label": "RocksProcess",
+        "parameter_groups": [
+            {
+                "keys": [
+                    "scale_radius",
+                    "prune_collisions",
+                    "prune_density",
+                    "seed"
+                ],
+                "name": "main"
+            }
+        ],
+        "parameters": {
+            "prune_collisions": {
+                "description": "When enabled, eliminates overlapping rocks by discarding smaller colliding rocks.",
+                "key": "prune_collisions",
+                "label": "Prune Collisions",
+                "type": "Bool"
+            },
+            "prune_density": {
+                "description": "Target fraction of items to retain using density-based pruning.",
+                "key": "prune_density",
+                "label": "Prune Density",
+                "type": "Float"
+            },
+            "scale_radius": {
+                "description": "Scaling factor applied to rock radii.",
+                "key": "scale_radius",
+                "label": "Scale Radius",
+                "type": "Float"
+            },
+            "seed": {
+                "description": "Random seed for reproducible pruning.",
+                "key": "seed",
+                "label": "Seed",
+                "type": "Random seed number"
+            }
+        },
+        "ports": {
+            "density_mask": {
+                "caption": "density_mask",
+                "data_type": "VirtualArray",
+                "description": "Optional density mask for spatial retention pruning.",
+                "type": "input"
+            },
+            "elevation": {
+                "caption": "elevation",
+                "data_type": "VirtualArray",
+                "description": "Optional elevation heightmap to set rock heights.",
+                "type": "input"
+            },
+            "input": {
+                "caption": "input",
+                "data_type": "RockField",
+                "description": "Input rock field.",
+                "type": "input"
+            },
+            "output": {
+                "caption": "output",
+                "data_type": "RockField",
+                "description": "Processed rock field.",
                 "type": "output"
             }
         }
