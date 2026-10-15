@@ -71,7 +71,7 @@ void setup_rock_simulation_node(BaseNode &node)
   // clang-format off
   node.set_current_category("Emission & Simulation");
   add_int(node, A_ROCK_COUNT, "Rock Count", 20000, 1, 500000);
-  add_int(node, A_MAX_STEPS, "Max Steps", 1024, 16, FLT_MAX);
+  add_int(node, A_MAX_STEPS, "Max Steps", 1024, 16, INT_MAX);
   add_float(node, A_SOIL_FRICTION, "Soil Friction", 0.55f, 0.01f, 2.0f);
   add_float(node, A_ROLLING_RESISTANCE, "Rolling Resistance", 0.05f, 0.001f, 1.0f);
   add_float(node, A_INTER_ROCK_RESTITUTION, "Restitution", 0.9f, 0.0f, 1.0f);
