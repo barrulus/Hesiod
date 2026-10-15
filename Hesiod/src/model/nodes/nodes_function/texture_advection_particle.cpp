@@ -79,7 +79,7 @@ void setup_texture_advection_particle_node(BaseNode &node)
     add_seed(node, A_SEED, "Seed");
     add_int(node, A_LEVELS, "levels", 4, 1, 6);
     add_float(node, A_MIX, "mix", 1.f, 0.f, 1.f);
-    add_float(node, A_WARP, "warp", 0.15f, 0.f, 2.f);
+    add_float(node, A_WARP, "warp", 1.f, 0.f, 2.f);
     add_float(node, A_PARTICLE_DENSITY, "particle_density", 0.1f, 0.f, 1.f);
 
     setup_common_advection_attributes(node);

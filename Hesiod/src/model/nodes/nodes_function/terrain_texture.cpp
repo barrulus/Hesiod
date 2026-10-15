@@ -75,7 +75,7 @@ void setup_terrain_texture_node(BaseNode &node)
   add_color(node, A_SNOW, "Snow", {0.94f, 0.95f, 0.97f, 1.f});
 
   node.set_current_category("Rock & Ridges");
-  add_float(node, A_ROCK_SLOPE, "Rock Slope", 3.f, 0.05f, 8.f);
+  add_float(node, A_ROCK_SLOPE, "Rock Slope", 3.f, 0.f, FLT_MAX);
   add_float(node, A_ROCK_EDGE, "Edge Softness", 0.15f, 0.01f, 1.f);
   add_float(node, A_STRATA, "Strata", 0.35f, 0.f, 1.f);
   add_float(node, A_STREAKS, "Ridge Streaks", 0.8f, 0.f, 1.f);
@@ -90,7 +90,7 @@ void setup_terrain_texture_node(BaseNode &node)
 
   node.set_current_category("Variation");
   add_seed(node, A_SEED);
-  add_float(node, A_NOISE_SCALE, "Noise Scale", 1.f, 0.1f, 8.f);
+  add_float(node, A_NOISE_SCALE, "Noise Scale", 0.2f, 0.1f, 2.f);
   add_float(node, A_COLOR_NOISE, "Color Noise", 1.f, 0.f, 2.f);
   add_float(node, A_DETAIL, "Relief Detail", 1.f, 0.f, 2.f);
   add_float(node, A_CAVITY, "Cavity Shading", 0.6f, 0.f, 1.f);
