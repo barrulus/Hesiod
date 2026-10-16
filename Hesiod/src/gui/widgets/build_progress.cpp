@@ -178,13 +178,13 @@ void BuildProgress::place()
   const QFontMetrics fm(this->font());
   const int          h = 2 * fm.height();
   const int          text = std::max(fm.horizontalAdvance(held_text),
-                                     fm.horizontalAdvance(building_text + "  000 / 000"));
+                            fm.horizontalAdvance(building_text + "  000 / 000"));
   const int          w = std::min(
       std::max(HSD_CTX.app_settings.window.progress_bar_width, text + 2 * h),
       this->area->width() - 2 * h);
 
   const QRect a = this->area->geometry();
-  int y = a.bottom() - h - h / 2;
+  int         y = a.bottom() - h - h / 2;
 
   // above the toolbar when it is docked to the bottom
   if (this->rail && this->rail->get_edge() == rail::Edge::Bottom)

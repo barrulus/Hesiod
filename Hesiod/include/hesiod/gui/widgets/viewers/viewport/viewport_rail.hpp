@@ -27,7 +27,10 @@ public:
 protected:
   void paint_under_tools(QPainter &p, const QPointF &origin) override;
   bool paint_cell(QPainter &p, const Item &item, const QRectF &cell, bool hover) override;
-  void paint_tool(QPainter &p, const Item &item, const QRectF &cell, const QColor &ink) override;
+  void paint_tool(QPainter     &p,
+                  const Item   &item,
+                  const QRectF &cell,
+                  const QColor &ink) override;
 
 private:
   QString            resolution_text = "1K";

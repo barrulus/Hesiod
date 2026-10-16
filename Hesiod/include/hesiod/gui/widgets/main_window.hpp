@@ -45,8 +45,8 @@ private:
   void setup_frameless_window();
   void setup_status_bar();
 
-  TitleBar     *title_bar = nullptr;
-  bool          frameless = false;
+  TitleBar *title_bar = nullptr;
+  bool      frameless = false;
 };
 
 } // namespace hesiod

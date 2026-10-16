@@ -93,8 +93,8 @@ void BuildBorder::paintEvent(QPaintEvent *)
   // a whole number of dashes around it, so that it has no seam (a little
   // longer or shorter to fit)
   const qreal period = (dash + gap) * width;
-  const qreal stretch = path.length() /
-                        std::max(1., std::round(path.length() / period)) / period;
+  const qreal stretch = path.length() / std::max(1., std::round(path.length() / period)) /
+                        period;
 
   QColor color = HSD_CTX.app_settings.colors.building;
   color.setAlphaF(0.6);

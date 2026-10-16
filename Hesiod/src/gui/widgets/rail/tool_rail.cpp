@@ -183,7 +183,10 @@ void ToolRail::place()
   this->owner->notify_layout_changed();
 }
 
-void ToolRail::paint_tool(QPainter &p, const Item &item, const QRectF &cell, const QColor &ink)
+void ToolRail::paint_tool(QPainter     &p,
+                          const Item   &item,
+                          const QRectF &cell,
+                          const QColor &ink)
 {
   if (this->icon_painter)
     this->icon_painter(p,

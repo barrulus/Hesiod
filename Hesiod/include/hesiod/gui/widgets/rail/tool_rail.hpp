@@ -80,20 +80,23 @@ protected:
   {
     return false;
   }
-  virtual void paint_tool(QPainter &p, const Item &item, const QRectF &cell, const QColor &ink);
+  virtual void paint_tool(QPainter     &p,
+                          const Item   &item,
+                          const QRectF &cell,
+                          const QColor &ink);
 
   // cell `i` relative to the docked rail's top-left, and which one has a tool
   QRectF cell_rect(size_t i) const;
   int    index_of(int tool) const;
   qreal  cell_radius() const; // cells are inset from the rail: their corners follow it
 
-  bool       event(QEvent *event) override;
-  void       leaveEvent(QEvent *event) override;
-  void       wheelEvent(QWheelEvent *event) override;
-  void       mousePressEvent(QMouseEvent *event) override;
-  void       mouseMoveEvent(QMouseEvent *event) override;
-  void       mouseReleaseEvent(QMouseEvent *event) override;
-  void       paintEvent(QPaintEvent *event) override;
+  bool event(QEvent *event) override;
+  void leaveEvent(QEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
+  void mousePressEvent(QMouseEvent *event) override;
+  void mouseMoveEvent(QMouseEvent *event) override;
+  void mouseReleaseEvent(QMouseEvent *event) override;
+  void paintEvent(QPaintEvent *event) override;
 
 private:
   // a docked placement: the edge, the rail's top-left, and whether it is

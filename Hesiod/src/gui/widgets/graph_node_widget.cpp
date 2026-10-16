@@ -1153,7 +1153,8 @@ void GraphNodeWidget::setup_connections()
         continue;
       }
 
-      const QString text = shape.x != shape.y ? QString("%1 × %2").arg(shape.x).arg(shape.y)
+      const QString text = shape.x != shape.y
+                               ? QString("%1 × %2").arg(shape.x).arg(shape.y)
                            : shape.x % 1024 == 0 ? QString("%1K").arg(shape.x / 1024)
                                                  : QString::number(shape.x);
 

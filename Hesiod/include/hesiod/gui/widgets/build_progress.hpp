@@ -45,16 +45,16 @@ private:
   void place();
   void refresh();
 
-  QPointer<QWidget>     area;
+  QPointer<QWidget>        area;
   QPointer<rail::ToolRail> rail; // the toolbar of the editor, kept clear of
-  std::function<void()> resume;
-  bool                  updating = false;
-  bool                  held = false;
-  QSet<QString>         done_ids;        // over the whole update
-  QStringList           pass;            // the nodes of the current pass
-  int                   done_before = 0; // done, and not in the current pass
-  int                   done = 0;
-  int                   total = 0;
+  std::function<void()>    resume;
+  bool                     updating = false;
+  bool                     held = false;
+  QSet<QString>            done_ids;        // over the whole update
+  QStringList              pass;            // the nodes of the current pass
+  int                      done_before = 0; // done, and not in the current pass
+  int                      done = 0;
+  int                      total = 0;
 };
 
 } // namespace hesiod

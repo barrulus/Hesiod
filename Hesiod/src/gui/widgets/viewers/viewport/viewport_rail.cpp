@@ -16,7 +16,9 @@
 namespace hesiod::viewport
 {
 
-ViewportRail::ViewportRail(rail::RailOwner *owner, rail::SnapGuide *guide, QWidget *parent)
+ViewportRail::ViewportRail(rail::RailOwner *owner,
+                           rail::SnapGuide *guide,
+                           QWidget         *parent)
     : rail::ToolRail(owner, guide, parent)
 {
   this->icon_painter = paint_icon;
@@ -82,10 +84,15 @@ void ViewportRail::paint_under_tools(QPainter &p, const QPointF &origin)
                     a.width(),
                     a.height());
   p.setBrush(mix_colors(surface_color(), colors.accent, 0.30));
-  p.drawRoundedRect(knob.adjusted(1.5, 1.5, -1.5, -1.5), cell_radius - 1, cell_radius - 1);
+  p.drawRoundedRect(knob.adjusted(1.5, 1.5, -1.5, -1.5),
+                    cell_radius - 1,
+                    cell_radius - 1);
 }
 
-bool ViewportRail::paint_cell(QPainter &p, const Item &item, const QRectF &cell, bool hover)
+bool ViewportRail::paint_cell(QPainter     &p,
+                              const Item   &item,
+                              const QRectF &cell,
+                              bool          hover)
 {
   if (item.tool != ToolView2D && item.tool != ToolView3D)
     return false;
