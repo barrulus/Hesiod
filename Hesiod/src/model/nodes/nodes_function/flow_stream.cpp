@@ -27,12 +27,17 @@ constexpr const char *A_CONTROL_POINTS_COUNT          = "control_points_count";
 constexpr const char *A_DEPTH                         = "depth";
 constexpr const char *A_DISTANCE_EXPONENT             = "distance_exponent";
 constexpr const char *A_ELEVATION_RATIO               = "elevation_ratio";
+constexpr const char *A_ENABLE_WIDTH_CURVATURE_SCALING= "enable_width_curvature_scaling";
 constexpr const char *A_ENABLE_WIDTH_DISTANCE_SCALING = "enable_width_distance_scaling";
 constexpr const char *A_FAVOR_DOMAIN_CENTER           = "favor_domain_center";
+constexpr const char *A_FAVOR_STREAM_MERGING          = "favor_stream_merging";
 constexpr const char *A_RADIAL_PROFILE                = "radial_profile";
 constexpr const char *A_RADIAL_PROFILE_PARAMETER      = "radial_profile_parameter";
 constexpr const char *A_SEED                          = "seed";
+constexpr const char *A_TRUNCATE_MERGING_PATHS        = "truncate_merging_paths";
 constexpr const char *A_UPWARD_PENALIZATION           = "upward_penalization";
+constexpr const char *A_VALLEY_FACTOR                 = "valley_factor";
+constexpr const char *A_VALLEY_RADIUS                 = "valley_radius";
 constexpr const char *A_WIDTH                         = "width";
 
 // -----------------------------------------------------------------------------
@@ -56,11 +61,17 @@ void setup_flow_stream_node(BaseNode &node)
   // clang-format off
   node.set_current_category("Pathfinding");
   add_seed(node, A_SEED, "Seed");
-  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 20000, 100, 50000);
+  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 4096, 100, 50000);
   add_float(node, A_ELEVATION_RATIO, "Elevation vs Slope Weight", 0.5f, 0.f, 0.99f);
   add_float(node, A_DISTANCE_EXPONENT, "Distance Exponent", 2.f, 0.1f, 4.f);
   add_float(node, A_UPWARD_PENALIZATION, "Upward Penalization", 100.f, 0.f, 1000.f);
   add_bool(node, A_FAVOR_DOMAIN_CENTER, "Favor Domain Center", true);
+
+  node.set_current_category("Stream Merging");
+  add_bool(node, A_FAVOR_STREAM_MERGING, "Favor Stream Merging", true);
+  add_float(node, A_VALLEY_RADIUS, "Valley Radius", 0.05f, 0.001f, 0.2f);
+  add_float(node, A_VALLEY_FACTOR, "Valley Factor", 0.35f, 0.01f, 2.f);
+  add_bool(node, A_TRUNCATE_MERGING_PATHS, "Truncate Merging Streams", true);
 
   node.set_current_category("Riverbed");
   add_float(node, A_DEPTH, "Depth", 0.02f, 0.f, 0.2f);
@@ -70,6 +81,7 @@ void setup_flow_stream_node(BaseNode &node)
   add_enum(node, A_RADIAL_PROFILE, "Radial Profile", enum_mappings.radial_profile_map, "Smoothstep Upper");
   add_float(node, A_RADIAL_PROFILE_PARAMETER, "Profile Sharpness", 2.f, 0.f, 8.f);
   add_bool(node, A_ENABLE_WIDTH_DISTANCE_SCALING, "Width Distance Scaling", false);
+  add_bool(node, A_ENABLE_WIDTH_CURVATURE_SCALING, "Width Curvature Scaling", true);
   // clang-format on
 }
 
@@ -108,12 +120,17 @@ void compute_flow_stream_node(BaseNode &node)
   const auto distance_exponent    = node.val<float>(A_DISTANCE_EXPONENT);
   const auto upward_penalization  = node.val<float>(A_UPWARD_PENALIZATION);
   const auto favor_domain_center  = node.val<bool>(A_FAVOR_DOMAIN_CENTER);
+  const auto favor_stream_merging = node.val<bool>(A_FAVOR_STREAM_MERGING);
+  const auto valley_radius        = node.val<float>(A_VALLEY_RADIUS);
+  const auto valley_factor        = node.val<float>(A_VALLEY_FACTOR);
+  const auto truncate_merging     = node.val<bool>(A_TRUNCATE_MERGING_PATHS);
 
-  const auto depth                          = node.val<float>(A_DEPTH);
-  const auto width                          = node.val<float>(A_WIDTH);
-  const auto radial_profile                 = node.val_enum<hmap::RadialProfile>(A_RADIAL_PROFILE);
-  const auto radial_profile_parameter       = node.val<float>(A_RADIAL_PROFILE_PARAMETER);
-  const auto enable_width_distance_scaling  = node.val<bool>(A_ENABLE_WIDTH_DISTANCE_SCALING);
+  const auto depth                           = node.val<float>(A_DEPTH);
+  const auto width                           = node.val<float>(A_WIDTH);
+  const auto radial_profile                  = node.val_enum<hmap::RadialProfile>(A_RADIAL_PROFILE);
+  const auto radial_profile_parameter        = node.val<float>(A_RADIAL_PROFILE_PARAMETER);
+  const auto enable_width_distance_scaling   = node.val<bool>(A_ENABLE_WIDTH_DISTANCE_SCALING);
+  const auto enable_width_curvature_scaling  = node.val<bool>(A_ENABLE_WIDTH_CURVATURE_SCALING);
   // clang-format on
 
   // --- Flow stream paths
@@ -123,15 +140,20 @@ void compute_flow_stream_node(BaseNode &node)
 
   for (const auto &p : *p_cloud)
   {
-    hmap::Path path = hmap::va::flow_stream(node.cfg().cm_cpu,
-                                            *p_in,
-                                            glm::vec2(p.x, p.y),
-                                            seed,
-                                            control_points_count,
-                                            elevation_ratio,
-                                            distance_exponent,
-                                            upward_penalization,
-                                            favor_domain_center);
+    hmap::Path path = hmap::va::flow_stream(
+        node.cfg().cm_cpu,
+        *p_in,
+        glm::vec2(p.x, p.y),
+        seed,
+        control_points_count,
+        elevation_ratio,
+        distance_exponent,
+        upward_penalization,
+        favor_domain_center,
+        favor_stream_merging ? path_list : std::vector<hmap::Path>{},
+        valley_radius,
+        valley_factor,
+        truncate_merging);
 
     if (path.size() > 1)
       path_list.push_back(std::move(path));
@@ -162,7 +184,7 @@ void compute_flow_stream_node(BaseNode &node)
                      width,
                      /* enable_width_depth_scaling */ enable_width_distance_scaling,
                      /* enable_width_distance_scaling */ enable_width_distance_scaling,
-                     /* enable_width_curvature_scaling */ false,
+                     enable_width_curvature_scaling,
                      /* curvature_radius_min */ 1.f,
                      /* curv_width_ratio_min */ 0.5f,
                      /* curv_width_ratio_max */ 2.f,

@@ -8279,6 +8279,15 @@
             },
             {
                 "keys": [
+                    "favor_stream_merging",
+                    "valley_radius",
+                    "valley_factor",
+                    "truncate_merging_paths"
+                ],
+                "name": "Stream Merging"
+            },
+            {
+                "keys": [
                     "depth"
                 ],
                 "name": "Riverbed"
@@ -8337,6 +8346,12 @@
                 "label": "Favor Domain Center",
                 "type": "Bool"
             },
+            "favor_stream_merging": {
+                "description": "Biases stream pathfinding toward merging with existing streams.",
+                "key": "favor_stream_merging",
+                "label": "Favor Stream Merging",
+                "type": "Bool"
+            },
             "radial_profile": {
                 "description": "Profile shape used across the trench cross-section.",
                 "key": "radial_profile",
@@ -8355,10 +8370,28 @@
                 "label": "Seed",
                 "type": "Random seed number"
             },
+            "truncate_merging_paths": {
+                "description": "Truncates streams at the point where they intersect previously traced streams.",
+                "key": "truncate_merging_paths",
+                "label": "Truncate Merging Streams",
+                "type": "Bool"
+            },
             "upward_penalization": {
                 "description": "Penalty factor applied to uphill elevation changes during pathfinding.",
                 "key": "upward_penalization",
                 "label": "Upward Penalization",
+                "type": "Float"
+            },
+            "valley_factor": {
+                "description": "Attenuation factor per distance unit in valley attraction towards existing streams.",
+                "key": "valley_factor",
+                "label": "Valley Factor",
+                "type": "Float"
+            },
+            "valley_radius": {
+                "description": "Radius around existing streams to apply pathfinding attraction.",
+                "key": "valley_radius",
+                "label": "Valley Radius",
                 "type": "Float"
             },
             "width": {
