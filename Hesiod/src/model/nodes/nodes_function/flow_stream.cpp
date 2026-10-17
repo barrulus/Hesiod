@@ -2,6 +2,7 @@
  * Public License. The full license is in the file LICENSE, distributed with
  * this software. */
 #include "highmap/carving.hpp"
+#include "highmap/geometry/graph.hpp"
 #include "highmap/hydrology/hydrology.hpp"
 
 #include "hesiod/model/nodes/attributes.hpp"
@@ -27,8 +28,7 @@ constexpr const char *A_CONTROL_POINTS_COUNT          = "control_points_count";
 constexpr const char *A_DEPTH                         = "depth";
 constexpr const char *A_DISTANCE_EXPONENT             = "distance_exponent";
 constexpr const char *A_ELEVATION_RATIO               = "elevation_ratio";
-constexpr const char *A_ENABLE_WIDTH_CURVATURE_SCALING= "enable_width_curvature_scaling";
-constexpr const char *A_ENABLE_WIDTH_DISTANCE_SCALING = "enable_width_distance_scaling";
+constexpr const char *A_ENABLE_WIDTH_DEPTH_SCALING    = "enable_width_depth_scaling";
 constexpr const char *A_FAVOR_DOMAIN_CENTER           = "favor_domain_center";
 constexpr const char *A_FAVOR_STREAM_MERGING          = "favor_stream_merging";
 constexpr const char *A_RADIAL_PROFILE                = "radial_profile";
@@ -39,6 +39,7 @@ constexpr const char *A_UPWARD_PENALIZATION           = "upward_penalization";
 constexpr const char *A_VALLEY_FACTOR                 = "valley_factor";
 constexpr const char *A_VALLEY_RADIUS                 = "valley_radius";
 constexpr const char *A_WIDTH                         = "width";
+constexpr const char *A_WIDTH_EXPONENT                = "width_exponent";
 
 // -----------------------------------------------------------------------------
 // Setup
@@ -78,10 +79,10 @@ void setup_flow_stream_node(BaseNode &node)
 
   node.set_current_category("Carving");
   add_float(node, A_WIDTH, "Width", 0.02f, 0.001f, 0.2f);
+  add_float(node, A_WIDTH_EXPONENT, "Width Exponent", 0.5f, 0.1f, 3.f);
+  add_bool(node, A_ENABLE_WIDTH_DEPTH_SCALING, "Width Depth Scaling", true);
   add_enum(node, A_RADIAL_PROFILE, "Radial Profile", enum_mappings.radial_profile_map, "Smoothstep Upper");
   add_float(node, A_RADIAL_PROFILE_PARAMETER, "Profile Sharpness", 2.f, 0.f, 8.f);
-  add_bool(node, A_ENABLE_WIDTH_DISTANCE_SCALING, "Width Distance Scaling", false);
-  add_bool(node, A_ENABLE_WIDTH_CURVATURE_SCALING, "Width Curvature Scaling", true);
   // clang-format on
 }
 
@@ -125,12 +126,12 @@ void compute_flow_stream_node(BaseNode &node)
   const auto valley_factor        = node.val<float>(A_VALLEY_FACTOR);
   const auto truncate_merging     = node.val<bool>(A_TRUNCATE_MERGING_PATHS);
 
-  const auto depth                           = node.val<float>(A_DEPTH);
-  const auto width                           = node.val<float>(A_WIDTH);
-  const auto radial_profile                  = node.val_enum<hmap::RadialProfile>(A_RADIAL_PROFILE);
-  const auto radial_profile_parameter        = node.val<float>(A_RADIAL_PROFILE_PARAMETER);
-  const auto enable_width_distance_scaling   = node.val<bool>(A_ENABLE_WIDTH_DISTANCE_SCALING);
-  const auto enable_width_curvature_scaling  = node.val<bool>(A_ENABLE_WIDTH_CURVATURE_SCALING);
+  const auto depth                      = node.val<float>(A_DEPTH);
+  const auto width                      = node.val<float>(A_WIDTH);
+  const auto width_exponent             = node.val<float>(A_WIDTH_EXPONENT);
+  const auto enable_width_depth_scaling = node.val<bool>(A_ENABLE_WIDTH_DEPTH_SCALING);
+  const auto radial_profile             = node.val_enum<hmap::RadialProfile>(A_RADIAL_PROFILE);
+  const auto radial_profile_parameter   = node.val<float>(A_RADIAL_PROFILE_PARAMETER);
   // clang-format on
 
   // --- Flow stream paths
@@ -159,6 +160,10 @@ void compute_flow_stream_node(BaseNode &node)
       path_list.push_back(std::move(path));
   }
 
+  // --- Stream graph
+
+  hmap::Graph stream_graph = hmap::hydrology_paths_to_graph(path_list, 1e-3f);
+
   // --- Carve river trench
 
   hmap::for_each_tile(
@@ -173,33 +178,26 @@ void compute_flow_stream_node(BaseNode &node)
 
         *pa_out = *pa_in;
 
-        if (path_list.empty())
+        if (stream_graph.empty())
         {
           *pa_water_depth = 0.f;
           return;
         }
 
         hmap::trench(*pa_out,
-                     path_list,
+                     stream_graph,
                      width,
-                     /* enable_width_depth_scaling */ enable_width_distance_scaling,
-                     /* enable_width_distance_scaling */ enable_width_distance_scaling,
-                     enable_width_curvature_scaling,
-                     /* curvature_radius_min */ 1.f,
-                     /* curv_width_ratio_min */ 0.5f,
-                     /* curv_width_ratio_max */ 2.f,
+                     width_exponent,
+                     enable_width_depth_scaling,
                      radial_profile,
                      radial_profile_parameter,
                      hmap::ElevationLongitudinalProfile::ELP_DECREASING,
                      /* elevation_shift */ -depth,
-                     /* shift_ramp_start_ratio */ 0.f,
-                     /* shift_ramp_end_ratio */ 0.f,
                      /* min_slope */ 0.001f,
-                     /* k_neighbors */ 8,
-                     /* p_noise_r */ pa_noise_r,
-                     /* p_bending_mask */ nullptr,
-                     /* tile_size */ 32,
-                     /* bbox */ region.bbox);
+                     pa_noise_r,
+                     nullptr,
+                     32,
+                     region.bbox);
 
         *pa_water_depth = *pa_in - *pa_out;
       },

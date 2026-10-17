@@ -8295,10 +8295,10 @@
             {
                 "keys": [
                     "width",
+                    "width_exponent",
+                    "enable_width_depth_scaling",
                     "radial_profile",
-                    "radial_profile_parameter",
-                    "enable_width_distance_scaling",
-                    "enable_width_curvature_scaling"
+                    "radial_profile_parameter"
                 ],
                 "name": "Carving"
             }
@@ -8328,16 +8328,10 @@
                 "label": "Elevation vs Slope Weight",
                 "type": "Float"
             },
-            "enable_width_curvature_scaling": {
-                "description": "Modulates trench width based on path curvature.",
-                "key": "enable_width_curvature_scaling",
-                "label": "Width Curvature Scaling",
-                "type": "Bool"
-            },
-            "enable_width_distance_scaling": {
-                "description": "Modulates trench width along the distance and depth of the path.",
-                "key": "enable_width_distance_scaling",
-                "label": "Width Distance Scaling",
+            "enable_width_depth_scaling": {
+                "description": "Modulates trench width based on local elevation difference.",
+                "key": "enable_width_depth_scaling",
+                "label": "Width Depth Scaling",
                 "type": "Bool"
             },
             "favor_domain_center": {
@@ -8398,6 +8392,12 @@
                 "description": "Width of the carved river trench.",
                 "key": "width",
                 "label": "Width",
+                "type": "Float"
+            },
+            "width_exponent": {
+                "description": "Scaling exponent for width with distance to outlet.",
+                "key": "width_exponent",
+                "label": "Width Exponent",
                 "type": "Float"
             }
         },
