@@ -6,6 +6,7 @@
 
 #include "hesiod/model/nodes/attributes.hpp"
 
+#include "hesiod/app/enum_mappings.hpp"
 #include "hesiod/logger.hpp"
 #include "hesiod/model/nodes/base_node.hpp"
 
@@ -16,23 +17,23 @@ namespace hesiod
 // Ports & Attributes
 // -----------------------------------------------------------------------------
 
-constexpr const char *P_IN         = "input";
-constexpr const char *P_OUT        = "output";
-constexpr const char *P_RIVER_MASK = "river_mask";
-constexpr const char *P_SOURCES    = "sources";
+constexpr const char *P_IN          = "input";
+constexpr const char *P_NOISE_R     = "noise_r";
+constexpr const char *P_OUT         = "output";
+constexpr const char *P_SOURCES     = "sources";
+constexpr const char *P_WATER_DEPTH = "water_depth";
 
-constexpr const char *A_CONTROL_POINTS_COUNT = "control_points_count";
-constexpr const char *A_DEPTH                = "depth";
-constexpr const char *A_DISTANCE_EXPONENT    = "distance_exponent";
-constexpr const char *A_ELEVATION_RATIO      = "elevation_ratio";
-constexpr const char *A_FAVOR_DOMAIN_CENTER  = "favor_domain_center";
-constexpr const char *A_MERGING_RADIUS       = "merging_radius";
-constexpr const char *A_NOISE_RATIO          = "noise_ratio";
-constexpr const char *A_RIVER_RADIUS         = "river_radius";
-constexpr const char *A_RIVERBANK_SLOPE      = "riverbank_slope";
-constexpr const char *A_RIVERBED_SLOPE       = "riverbed_slope";
-constexpr const char *A_SEED                 = "seed";
-constexpr const char *A_UPWARD_PENALIZATION  = "upward_penalization";
+constexpr const char *A_CONTROL_POINTS_COUNT          = "control_points_count";
+constexpr const char *A_DEPTH                         = "depth";
+constexpr const char *A_DISTANCE_EXPONENT             = "distance_exponent";
+constexpr const char *A_ELEVATION_RATIO               = "elevation_ratio";
+constexpr const char *A_ENABLE_WIDTH_DISTANCE_SCALING = "enable_width_distance_scaling";
+constexpr const char *A_FAVOR_DOMAIN_CENTER           = "favor_domain_center";
+constexpr const char *A_RADIAL_PROFILE                = "radial_profile";
+constexpr const char *A_RADIAL_PROFILE_PARAMETER      = "radial_profile_parameter";
+constexpr const char *A_SEED                          = "seed";
+constexpr const char *A_UPWARD_PENALIZATION           = "upward_penalization";
+constexpr const char *A_WIDTH                         = "width";
 
 // -----------------------------------------------------------------------------
 // Setup
@@ -46,29 +47,29 @@ void setup_flow_stream_node(BaseNode &node)
 
   node.add_port<hmap::VirtualArray>(gnode::PortType::IN, P_IN);
   node.add_port<hmap::Cloud>(gnode::PortType::IN, P_SOURCES);
+  node.add_port<hmap::VirtualArray>(gnode::PortType::IN, P_NOISE_R);
   node.add_port<hmap::VirtualArray>(gnode::PortType::OUT, P_OUT, CONFIG(node));
-  node.add_port<hmap::VirtualArray>(gnode::PortType::OUT, P_RIVER_MASK, CONFIG(node));
+  node.add_port<hmap::VirtualArray>(gnode::PortType::OUT, P_WATER_DEPTH, CONFIG(node));
 
   // --- Attributes
 
   // clang-format off
   node.set_current_category("Pathfinding");
   add_seed(node, A_SEED, "Seed");
-  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 4096, 100, 30000);
+  add_int(node, A_CONTROL_POINTS_COUNT, "Control Points Count", 20000, 100, 50000);
   add_float(node, A_ELEVATION_RATIO, "Elevation vs Slope Weight", 0.5f, 0.f, 0.99f);
   add_float(node, A_DISTANCE_EXPONENT, "Distance Exponent", 2.f, 0.1f, 4.f);
   add_float(node, A_UPWARD_PENALIZATION, "Upward Penalization", 100.f, 0.f, 1000.f);
   add_bool(node, A_FAVOR_DOMAIN_CENTER, "Favor Domain Center", true);
 
-  node.set_current_category("Riverbed Slope");
-  add_float(node, A_RIVERBED_SLOPE, "Riverbed Slope", 0.01f, 0.f, 0.1f);
-  add_float(node, A_DEPTH, "Depth", 0.01f, 0.f, 0.2f);
+  node.set_current_category("Riverbed");
+  add_float(node, A_DEPTH, "Depth", 0.02f, 0.f, 0.2f);
 
-  node.set_current_category("Riverbank Carving");
-  add_float(node, A_RIVERBANK_SLOPE, "Riverbank Slope", 1.f, 0.f, 16.f);
-  add_float(node, A_RIVER_RADIUS, "River Radius", 0.001f, 0.001f, 0.1f);
-  add_float(node, A_MERGING_RADIUS, "Merging Radius", 0.001f, 0.f, 0.1f);
-  add_float(node, A_NOISE_RATIO, "Noise Ratio", 0.9f, 0.f, 1.f);
+  node.set_current_category("Carving");
+  add_float(node, A_WIDTH, "Width", 0.02f, 0.001f, 0.2f);
+  add_enum(node, A_RADIAL_PROFILE, "Radial Profile", enum_mappings.radial_profile_map, "Smoothstep Upper");
+  add_float(node, A_RADIAL_PROFILE_PARAMETER, "Profile Sharpness", 2.f, 0.f, 8.f);
+  add_bool(node, A_ENABLE_WIDTH_DISTANCE_SCALING, "Width Distance Scaling", false);
   // clang-format on
 }
 
@@ -80,10 +81,11 @@ void compute_flow_stream_node(BaseNode &node)
 {
   Logger::log()->trace("computing node [{}]/[{}]", node.get_label(), node.get_id());
 
-  const auto *p_in    = node.get_value_ref<hmap::VirtualArray>(P_IN);
-  const auto *p_cloud = node.get_value_ref<hmap::Cloud>(P_SOURCES);
-  auto       *p_out   = node.get_value_ref<hmap::VirtualArray>(P_OUT);
-  auto       *p_mask  = node.get_value_ref<hmap::VirtualArray>(P_RIVER_MASK);
+  const auto *p_in          = node.get_value_ref<hmap::VirtualArray>(P_IN);
+  const auto *p_cloud       = node.get_value_ref<hmap::Cloud>(P_SOURCES);
+  const auto *p_noise_r     = node.get_value_ref<hmap::VirtualArray>(P_NOISE_R);
+  auto       *p_out         = node.get_value_ref<hmap::VirtualArray>(P_OUT);
+  auto       *p_water_depth = node.get_value_ref<hmap::VirtualArray>(P_WATER_DEPTH);
 
   if (!p_in)
     return;
@@ -91,9 +93,9 @@ void compute_flow_stream_node(BaseNode &node)
   if (!p_cloud || p_cloud->empty())
   {
     p_out->copy_from(*p_in, node.cfg().cm_cpu);
-    p_mask->fill(0.f, node.cfg().cm_cpu);
+    p_water_depth->fill(0.f, node.cfg().cm_cpu);
     p_out->sync_overlap_buffers();
-    p_mask->sync_overlap_buffers();
+    p_water_depth->sync_overlap_buffers();
     return;
   }
 
@@ -107,12 +109,11 @@ void compute_flow_stream_node(BaseNode &node)
   const auto upward_penalization  = node.val<float>(A_UPWARD_PENALIZATION);
   const auto favor_domain_center  = node.val<bool>(A_FAVOR_DOMAIN_CENTER);
 
-  const auto depth                = node.val<float>(A_DEPTH);
-  const auto riverbed_slope       = node.val<float>(A_RIVERBED_SLOPE);
-  const auto riverbank_slope      = node.val<float>(A_RIVERBANK_SLOPE);
-  const auto river_radius         = node.val<float>(A_RIVER_RADIUS);
-  const auto merging_radius       = node.val<float>(A_MERGING_RADIUS);
-  const auto noise_ratio          = node.val<float>(A_NOISE_RATIO);
+  const auto depth                          = node.val<float>(A_DEPTH);
+  const auto width                          = node.val<float>(A_WIDTH);
+  const auto radial_profile                 = node.val_enum<hmap::RadialProfile>(A_RADIAL_PROFILE);
+  const auto radial_profile_parameter       = node.val<float>(A_RADIAL_PROFILE_PARAMETER);
+  const auto enable_width_distance_scaling  = node.val<bool>(A_ENABLE_WIDTH_DISTANCE_SCALING);
   // clang-format on
 
   // --- Flow stream paths
@@ -136,46 +137,54 @@ void compute_flow_stream_node(BaseNode &node)
       path_list.push_back(std::move(path));
   }
 
-  // --- Dig rivers
+  // --- Carve river trench
 
   hmap::for_each_tile(
-      {p_in},
-      {p_out, p_mask},
+      {p_in, p_noise_r},
+      {p_out, p_water_depth},
       [&](std::vector<const hmap::Array *> p_arrays_in,
           std::vector<hmap::Array *>       p_arrays_out,
           const hmap::TileRegion          &region)
       {
-        auto [pa_in]           = unpack<1>(p_arrays_in);
-        auto [pa_out, pa_mask] = unpack<2>(p_arrays_out);
+        auto [pa_in, pa_noise_r]      = unpack<2>(p_arrays_in);
+        auto [pa_out, pa_water_depth] = unpack<2>(p_arrays_out);
 
         *pa_out = *pa_in;
 
         if (path_list.empty())
         {
-          *pa_mask = 0.f;
+          *pa_water_depth = 0.f;
           return;
         }
 
-        const auto  nx              = region.shape.x - 1.f;
-        const int   merging_ir      = std::max(1, static_cast<int>(merging_radius * nx));
-        const int   river_ir        = static_cast<int>(river_radius * nx);
-        const float riverbank_talus = riverbank_slope / nx;
+        hmap::trench(*pa_out,
+                     path_list,
+                     width,
+                     /* enable_width_depth_scaling */ enable_width_distance_scaling,
+                     /* enable_width_distance_scaling */ enable_width_distance_scaling,
+                     /* enable_width_curvature_scaling */ false,
+                     /* curvature_radius_min */ 1.f,
+                     /* curv_width_ratio_min */ 0.5f,
+                     /* curv_width_ratio_max */ 2.f,
+                     radial_profile,
+                     radial_profile_parameter,
+                     hmap::ElevationLongitudinalProfile::ELP_DECREASING,
+                     /* elevation_shift */ -depth,
+                     /* shift_ramp_start_ratio */ 0.f,
+                     /* shift_ramp_end_ratio */ 0.f,
+                     /* min_slope */ 0.001f,
+                     /* k_neighbors */ 8,
+                     /* p_noise_r */ pa_noise_r,
+                     /* p_bending_mask */ nullptr,
+                     /* tile_size */ 32,
+                     /* bbox */ region.bbox);
 
-        hmap::dig_river(*pa_out,
-                        path_list,
-                        riverbank_talus,
-                        river_ir,
-                        merging_ir,
-                        depth,
-                        riverbed_slope,
-                        noise_ratio,
-                        seed,
-                        pa_mask);
+        *pa_water_depth = *pa_in - *pa_out;
       },
       node.cfg().cm_single_array);
 
   p_out->sync_overlap_buffers();
-  p_mask->sync_overlap_buffers();
+  p_water_depth->sync_overlap_buffers();
 }
 
 } // namespace hesiod

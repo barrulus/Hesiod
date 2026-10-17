@@ -8279,19 +8279,19 @@
             },
             {
                 "keys": [
-                    "riverbed_slope",
                     "depth"
                 ],
-                "name": "Riverbed Slope"
+                "name": "Riverbed"
             },
             {
                 "keys": [
-                    "riverbank_slope",
-                    "river_radius",
-                    "merging_radius",
-                    "noise_ratio"
+                    "width",
+                    "radial_profile",
+                    "radial_profile_parameter",
+                    "enable_width_distance_scaling",
+                    "enable_width_curvature_scaling"
                 ],
-                "name": "Riverbank Carving"
+                "name": "Carving"
             }
         ],
         "parameters": {
@@ -8319,40 +8319,34 @@
                 "label": "Elevation vs Slope Weight",
                 "type": "Float"
             },
+            "enable_width_curvature_scaling": {
+                "description": "Modulates trench width based on path curvature.",
+                "key": "enable_width_curvature_scaling",
+                "label": "Width Curvature Scaling",
+                "type": "Bool"
+            },
+            "enable_width_distance_scaling": {
+                "description": "Modulates trench width along the distance and depth of the path.",
+                "key": "enable_width_distance_scaling",
+                "label": "Width Distance Scaling",
+                "type": "Bool"
+            },
             "favor_domain_center": {
                 "description": "Biases flow paths toward passing through the center of the domain.",
                 "key": "favor_domain_center",
                 "label": "Favor Domain Center",
                 "type": "Bool"
             },
-            "merging_radius": {
-                "description": "Radius over which river tributaries smoothly merge together.",
-                "key": "merging_radius",
-                "label": "Merging Radius",
-                "type": "Float"
+            "radial_profile": {
+                "description": "Profile shape used across the trench cross-section.",
+                "key": "radial_profile",
+                "label": "Radial Profile",
+                "type": "Enum"
             },
-            "noise_ratio": {
-                "description": "Proportion of random noise perturbation applied along the riverbank carving.",
-                "key": "noise_ratio",
-                "label": "Noise Ratio",
-                "type": "Float"
-            },
-            "river_radius": {
-                "description": "Width or radius of the carved river channel.",
-                "key": "river_radius",
-                "label": "River Radius",
-                "type": "Float"
-            },
-            "riverbank_slope": {
-                "description": "Slope angle of the riverbank carving.",
-                "key": "riverbank_slope",
-                "label": "Riverbank Slope",
-                "type": "Float"
-            },
-            "riverbed_slope": {
-                "description": "Downstream longitudinal slope along the riverbed.",
-                "key": "riverbed_slope",
-                "label": "Riverbed Slope",
+            "radial_profile_parameter": {
+                "description": "Sharpness or shape exponent for the radial profile.",
+                "key": "radial_profile_parameter",
+                "label": "Profile Sharpness",
                 "type": "Float"
             },
             "seed": {
@@ -8366,6 +8360,12 @@
                 "key": "upward_penalization",
                 "label": "Upward Penalization",
                 "type": "Float"
+            },
+            "width": {
+                "description": "Width of the carved river trench.",
+                "key": "width",
+                "label": "Width",
+                "type": "Float"
             }
         },
         "ports": {
@@ -8375,16 +8375,16 @@
                 "description": "Input heightmap terrain.",
                 "type": "input"
             },
+            "noise_r": {
+                "caption": "noise_r",
+                "data_type": "VirtualArray",
+                "description": "Optional noise array to perturb trench width.",
+                "type": "input"
+            },
             "output": {
                 "caption": "output",
                 "data_type": "VirtualArray",
                 "description": "Output heightmap with carved river channels.",
-                "type": "output"
-            },
-            "river_mask": {
-                "caption": "river_mask",
-                "data_type": "VirtualArray",
-                "description": "Output mask of the carved river channels.",
                 "type": "output"
             },
             "sources": {
@@ -8392,6 +8392,12 @@
                 "data_type": "Cloud",
                 "description": "Cloud of source coordinates from which flow streams originate.",
                 "type": "input"
+            },
+            "water_depth": {
+                "caption": "water_depth",
+                "data_type": "VirtualArray",
+                "description": "Water depth computed as the difference between input and output terrain.",
+                "type": "output"
             }
         }
     },
