@@ -186,6 +186,12 @@ if(HESIOD_ENABLE_TESTS)
     graph_editor PROPERTIES WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
                             ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+  add_executable(profile_highmap ${CMAKE_SOURCE_DIR}/tests/profiling/highmap_workload.cpp)
+  set_target_properties(profile_highmap PROPERTIES AUTOMOC OFF)
+  target_include_directories(profile_highmap PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  target_link_libraries(profile_highmap PRIVATE highmap hesiod_tracy)
+  add_test(NAME profiling_highmap COMMAND profile_highmap)
+
   # Explicit desktop workload; requires a real OpenGL display, not offscreen CTest.
   add_executable(profile_viewer ${CMAKE_SOURCE_DIR}/tests/gui/profile_viewer.cpp)
   target_link_libraries(profile_viewer PRIVATE hesiod_core Qt6::Test)

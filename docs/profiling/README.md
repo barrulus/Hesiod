@@ -62,10 +62,9 @@ quadruples a single float array's storage. Use a tiled run as a separate compari
 RSS includes the whole process, libraries and profiler overhead. Sampling can
 miss short-lived peaks; the kernel peak includes startup and never decreases.
 Neither is a per-node allocation total, and neither measures GPU device memory.
-These zones do not instrument HighMap's internal `to_array()` / `from_array()`
-calls or populate Tracy's allocation view. Use the first captures to choose where
-to add those finer zones and allocation hooks before claiming a copy or allocation
-bottleneck. Capture overhead should be checked against an uninstrumented build.
+The [HighMap stage zones](highmap-stages.md) include internal `to_array()` /
+`from_array()` calls and shared tile dispatch. They do not populate Tracy's
+allocation view; use allocation instrumentation before claiming allocation totals. Capture overhead should be checked against an uninstrumented build.
 
 ## Systematic node assessment
 
