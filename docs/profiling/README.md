@@ -240,3 +240,8 @@ not successful runtime measurements. The Day 1 counts remain unchanged.
 their asynchronous boundaries, and an explicit desktop workload for selection,
 parameter changes and camera movement. Keep these captures separate from the
 headless node baseline; renderer calls are not GPU kernel/frame timings.
+
+## Renderer stages
+
+[Renderer CPU stages and GPU frame-span plots](renderer-stages.md) cover
+background mesh work, uploads, render passes and per-context GPU elapsed time.

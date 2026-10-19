@@ -22,8 +22,9 @@ Tracy build described in [the profiling guide](README.md).
 
 Parent times include their children: do not add nested durations together.
 Renderer setter timings do not establish GPU execution or completion times.
-Async mesh work, actual frames and GPU timestamps require further instrumentation
-inside QTerrainRenderer; no renderer or HighMap dependency changes are made here.
+The [renderer stage instrumentation](renderer-stages.md) adds background mesh
+work, CPU render stages and per-context GPU frame-span plots underneath these
+viewer zones.
 Early-return/clearing viewer refreshes have no valid-node metadata. Exclude them
 when summarising the cost of refreshing a populated view. Valid-node refreshes
 can also have no active layer ports; use the child layer zones to distinguish
@@ -48,7 +49,8 @@ offscreen CTest. It creates an isolated viewer with temporary settings, computes
 a 512² GaussianPulse with one OpenMP thread, caps the display mesh at 256,
 creates a 128² thumbnail, changes the radius three times, then sends a camera
 drag. The same heightmap supplies the synthetic elevation, water-depth and colour
-layers to exercise their preparation paths. This is a diagnostic fixture, not a
+layers to exercise their preparation paths. It also creates and destroys two
+secondary viewers to exercise multiple OpenGL contexts. This is a diagnostic fixture, not a
 physically meaningful water scene. The window closes after the workload.
 
 Start capture in another terminal (use a fresh output path):

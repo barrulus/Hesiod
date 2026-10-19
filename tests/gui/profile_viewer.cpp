@@ -6,6 +6,7 @@
 #include <thread>
 
 #include <QMouseEvent>
+#include <QOpenGLFunctions>
 #include <QTemporaryDir>
 #include <QtTest>
 #include <omp.h>
@@ -118,12 +119,61 @@ int main(int argc, char **argv)
     QTest::mouseRelease(renderer, Qt::LeftButton, Qt::NoModifier, start + QPoint(60, 20));
     QTest::qWait(500);
   }
+  {
+    HSD_PROFILE_ZONE("Viewer workload::render_2d");
+    viewer.set_render_type(0);
+    for (int frame = 0; frame < 6; ++frame)
+    {
+      renderer->update();
+      QTest::qWait(50);
+    }
+    viewer.set_render_type(1);
+  }
+  // Exercise context switching, destruction and replacement while the first
+  // renderer stays alive. Each context must own its own timer queries.
+  for (int lifetime = 0; lifetime < 2; ++lifetime)
+  {
+    HSD_PROFILE_ZONE("Viewer workload::multiple_contexts");
+    ProfileViewer secondary(&graph_widget);
+    secondary.resize(640, 480);
+    secondary.show();
+    if (!QTest::qWaitForWindowExposed(&secondary, 10000))
+      return 6;
+    auto *other = secondary.findChild<qtr::RenderWidget *>();
+    if (!other || !other->isValid())
+      return 6;
+    secondary.set_current_node_id(id);
+    secondary.show_heightmap_layers();
+    for (int frame = 0; frame < 12; ++frame)
+    {
+      renderer->update();
+      other->update();
+      QTest::qWait(50);
+    }
+    other->makeCurrent();
+    const GLenum error = other->context()->functions()->glGetError();
+    other->doneCurrent();
+    if (error != GL_NO_ERROR)
+      return 7;
+    secondary.close();
+  }
+  for (int frame = 0; frame < 8; ++frame)
+  {
+    renderer->update();
+    QTest::qWait(50);
+  }
+  renderer->makeCurrent();
+  const GLenum error = renderer->context()->functions()->glGetError();
+  renderer->doneCurrent();
+  if (error != GL_NO_ERROR)
+    return 7;
+
   if (preview.get_preview_pixmap().isNull() ||
       !preview.get_preview_pixmap().save("viewer-preview.png") ||
       !renderer->grabFramebuffer().save("viewer-profile.png"))
     return 5;
   std::cout << "Viewer workload complete: 512x512, mesh cap 256, 3 parameter changes, "
-               "camera drag.\n";
+               "camera drag, 2D rendering, and two secondary-context lifetimes.\n";
   viewer.close();
   return 0;
 }
