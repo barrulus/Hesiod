@@ -47,6 +47,7 @@ include(HesiodCompilerOptions)
 include(HesiodPlatform)
 include(HesiodQtLoggingRules)
 include(HesiodGitVersion)
+include(HesiodTracy)
 
 # ------------------------------
 # Dependencies

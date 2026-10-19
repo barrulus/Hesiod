@@ -11,6 +11,7 @@
 
 #include "hesiod/app/hesiod_application.hpp"
 #include "hesiod/logger.hpp"
+#include "hesiod/profiling.hpp"
 #include "hesiod/model/graph/graph_config.hpp"
 #include "hesiod/model/graph/graph_manager.hpp"
 #include "hesiod/model/graph/graph_node.hpp"
@@ -105,6 +106,7 @@ void GraphManager::clear()
 
 void GraphManager::export_flatten()
 {
+  HSD_PROFILE_ZONE("GraphManager::export_flatten");
   Logger::log()->trace("GraphManager::export_flatten");
 
   // what is exported has to be computed first
@@ -508,6 +510,8 @@ void GraphManager::set_id(const std::string &new_id) { this->id = new_id; }
 
 void GraphManager::update()
 {
+  HSD_PROFILE_ZONE("GraphManager::update");
+  HSD_PROFILE_TEXT(this->id);
   Logger::log()->trace("GraphManager::update()");
 
   // BaseNode::compute contains per-node failures; what reaches here is a

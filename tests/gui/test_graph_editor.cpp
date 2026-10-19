@@ -19,6 +19,7 @@
 #include "hesiod/model/graph/graph_manager.hpp"
 #include "hesiod/model/graph/graph_node.hpp"
 #include "hesiod/model/nodes/base_node.hpp"
+#include "hesiod/model/utils.hpp"
 
 using namespace hesiod;
 
@@ -153,6 +154,18 @@ class GraphEditorTest : public QObject
 {
   Q_OBJECT
 private Q_SLOTS:
+  void export_filename_replacements_work_without_a_gui_project()
+  {
+    QVERIFY(!HSD_CTX.project_model);
+    auto config = small_config();
+    BaseNode node("Abs", config);
+    const auto replacements = get_standard_replacements(node, "exports/heightmap.png");
+    QCOMPARE(replacements.at("{PROJECT}"), std::string());
+    QCOMPARE(replacements.at("{FILENAME}"), std::string("heightmap"));
+    QCOMPARE(replacements.at("{EXT}"), std::string("png"));
+    QCOMPARE(replacements.at("{WIDTH}"), std::string("8"));
+  }
+
   void proxy_preserves_node_identity_and_port_values()
   {
     Fixture     f;

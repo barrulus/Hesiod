@@ -87,6 +87,7 @@ target_compile_features(hesiod_core PUBLIC cxx_std_20)
 target_link_libraries(
   hesiod_core
   PUBLIC hesiod_options
+         hesiod_tracy
          hesiod_platform
          hesiod_qt_logging
          hesiod_git_version
