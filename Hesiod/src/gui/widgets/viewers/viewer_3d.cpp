@@ -1,6 +1,8 @@
 /* Copyright (c) 2025 Otto Link. Distributed under the terms of the GNU General
  * Public License. The full license is in the file LICENSE, distributed with
  * this software. */
+#include <format>
+
 #include <QColor>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -26,6 +28,7 @@
 #include "hesiod/gui/widgets/viewers/viewport_controls.hpp"
 #include "hesiod/logger.hpp"
 #include "hesiod/model/graph/graph_node.hpp"
+#include "hesiod/profiling.hpp"
 
 namespace hesiod
 {
@@ -124,7 +127,7 @@ void Viewer3D::copy_render_settings_from(const Viewer3D &source)
   // Renderer serialization includes widget geometry. Keep this view's layout,
   // and copy only rendering state; Viewer::json_from would also copy the node,
   // pin and port choices from the embedded preview.
-  auto settings = source.p_renderer->json_to();
+  auto        settings = source.p_renderer->json_to();
   const QRect geometry = this->p_renderer->geometry();
   settings["x"] = geometry.x();
   settings["y"] = geometry.y();
@@ -296,6 +299,7 @@ void Viewer3D::set_render_type(int new_type)
 
 void Viewer3D::set_skybox(const std::filesystem::path path)
 {
+  HSD_PROFILE_ZONE("Viewer3D::set_skybox");
   Logger::log()->trace("Viewer3D::set_skybox, path={}", path.string());
 
   if (!std::filesystem::exists(path))
@@ -393,6 +397,7 @@ void Viewer3D::setup_layout()
 
 void Viewer3D::update_renderer()
 {
+  HSD_PROFILE_ZONE("Viewer3D::update_renderer");
   Logger::log()->trace("Viewer3D::update_renderer");
 
   // --- early exit cases
@@ -418,6 +423,14 @@ void Viewer3D::update_renderer()
     return;
   }
 
+  HSD_PROFILE_TEXT(std::format("viewer={:p} node={} type={} source={}x{} mesh_cap={}",
+                               static_cast<const void *>(this),
+                               this->current_node_id,
+                               p_node->get_node_type(),
+                               p_node->cfg().shape.x,
+                               p_node->cfg().shape.y,
+                               HSD_CTX.app_settings.viewer.mesh_resolution));
+
   // --- icons
 
   this->update_param_visibility_icons();
@@ -432,10 +445,21 @@ void Viewer3D::update_renderer()
           typeid(hmap::VirtualArray),
           [this, p_node](const hmap::VirtualArray &h)
           {
+            HSD_PROFILE_ZONE("Viewer3D::elevation");
             const glm::ivec2 shape = mesh_shape(h.shape);
-            auto             arr = h.to_array(shape, p_node->cfg().cm_cpu);
+            HSD_PROFILE_TEXT(std::format("source={}x{} display={}x{}",
+                                         h.shape.x,
+                                         h.shape.y,
+                                         shape.x,
+                                         shape.y));
+            auto arr = [&]
+            {
+              HSD_PROFILE_ZONE("Viewer3D::elevation.to_array");
+              return h.to_array(shape, p_node->cfg().cm_cpu);
+            }();
             if (this->p_renderer)
             {
+              HSD_PROFILE_ZONE("Viewer3D::elevation.submit_async");
               bool add_skirt = HSD_CTX.app_settings.viewer.add_heighmap_skirt;
 
               // built in the background, the view follows once it is ready
@@ -457,47 +481,65 @@ void Viewer3D::update_renderer()
           typeid(hmap::VirtualArray),
           [this, p_node](const hmap::VirtualArray &h, const hmap::VirtualArray &w)
           {
+            HSD_PROFILE_ZONE("Viewer3D::water");
             // TODO do this somewhere else?
             const glm::ivec2 shape = mesh_shape(h.shape);
-            auto             ah = h.to_array(shape, p_node->cfg().cm_cpu); // elevation
-            auto             aw = w.to_array(shape, p_node->cfg().cm_cpu); // water depth
-
-            // water elevation
-            ah += aw;
-
-            // extend the water depth by one-cell to avoid truncated
-            // cells at the interface water/ground
-            float dh = 1e3f;
-
-            for (int j = 0; j < shape.y; ++j)
-              for (int i = 0; i < shape.x; ++i)
-              {
-                if (aw(i, j) <= 0.f)
-                  ah(i, j) = 0.f;
-                else
-                  ah(i, j) += dh;
-              }
-
-            ah = hmap::dilation_expand_min_value_border_only(ah);
-
-            // remove non-water cells
+            HSD_PROFILE_TEXT(std::format("source={}x{} display={}x{}",
+                                         h.shape.x,
+                                         h.shape.y,
+                                         shape.x,
+                                         shape.y));
+            auto ah = [&]
+            {
+              HSD_PROFILE_ZONE("Viewer3D::water.elevation_to_array");
+              return h.to_array(shape, p_node->cfg().cm_cpu);
+            }();
+            auto aw = [&]
+            {
+              HSD_PROFILE_ZONE("Viewer3D::water.depth_to_array");
+              return w.to_array(shape, p_node->cfg().cm_cpu);
+            }();
             float cut_value = -1e3f;
+            {
+              HSD_PROFILE_ZONE("Viewer3D::water.prepare");
 
-            for (int j = 0; j < shape.y; ++j)
-              for (int i = 0; i < shape.x; ++i)
-              {
-                if (ah(i, j) <= 0.f)
-                  ah(i, j) = cut_value;
-                else
-                  ah(i, j) -= dh;
-              }
+              // water elevation
+              ah += aw;
 
-            // send to renderer
+              // extend the water depth by one-cell to avoid truncated
+              // cells at the interface water/ground
+              float dh = 1e3f;
+
+              for (int j = 0; j < shape.y; ++j)
+                for (int i = 0; i < shape.x; ++i)
+                {
+                  if (aw(i, j) <= 0.f)
+                    ah(i, j) = 0.f;
+                  else
+                    ah(i, j) += dh;
+                }
+
+              ah = hmap::dilation_expand_min_value_border_only(ah);
+
+              // remove non-water cells
+              for (int j = 0; j < shape.y; ++j)
+                for (int i = 0; i < shape.x; ++i)
+                {
+                  if (ah(i, j) <= 0.f)
+                    ah(i, j) = cut_value;
+                  else
+                    ah(i, j) -= dh;
+                }
+            }
+            // This includes synchronous renderer work, not GPU completion.
             if (this->p_renderer)
+            {
+              HSD_PROFILE_ZONE("Viewer3D::water.renderer_call");
               this->p_renderer->set_water_geometry(ah.vector,
                                                    shape.x,
                                                    shape.y,
                                                    cut_value);
+            }
           }))
   {
     this->p_renderer->reset_mesh(qtr::keys::mesh::water);
@@ -510,11 +552,19 @@ void Viewer3D::update_renderer()
             typeid(hmap::VirtualArray),
             [this, p_node](const hmap::VirtualArray &h)
             {
-              auto arr = h.to_array(p_node->cfg().cm_cpu);
+              HSD_PROFILE_ZONE("Viewer3D::color.heightmap");
+              auto arr = [&]
+              {
+                HSD_PROFILE_ZONE("Viewer3D::color.to_array");
+                return h.to_array(p_node->cfg().cm_cpu);
+              }();
               auto img = generate_selector_image(arr);
 
               if (this->p_renderer)
+              {
+                HSD_PROFILE_ZONE("Viewer3D::albedo.renderer_call");
                 this->p_renderer->set_texture(qtr::keys::tex::albedo, img, h.shape.x);
+              }
             }) ||
         helper_try_set_from_port<hmap::VirtualTexture>(
             *p_node,
@@ -522,10 +572,18 @@ void Viewer3D::update_renderer()
             typeid(hmap::VirtualTexture),
             [this, p_node, flip_y](const hmap::VirtualTexture &rgba)
             {
-              auto img = rgba.to_img_8bit(rgba.shape, p_node->cfg().cm_cpu, flip_y);
+              HSD_PROFILE_ZONE("Viewer3D::color.texture");
+              auto img = [&]
+              {
+                HSD_PROFILE_ZONE("Viewer3D::color.to_img_8bit");
+                return rgba.to_img_8bit(rgba.shape, p_node->cfg().cm_cpu, flip_y);
+              }();
 
               if (this->p_renderer)
+              {
+                HSD_PROFILE_ZONE("Viewer3D::albedo.renderer_call");
                 this->p_renderer->set_texture(qtr::keys::tex::albedo, img, rgba.shape.x);
+              }
             })))
   {
     this->p_renderer->reset_texture(qtr::keys::tex::albedo);
@@ -538,10 +596,18 @@ void Viewer3D::update_renderer()
           typeid(hmap::VirtualTexture),
           [this, p_node, flip_y](const hmap::VirtualTexture &rgba)
           {
-            auto img = rgba.to_img_8bit(rgba.shape, p_node->cfg().cm_cpu, flip_y);
+            HSD_PROFILE_ZONE("Viewer3D::normal.texture");
+            auto img = [&]
+            {
+              HSD_PROFILE_ZONE("Viewer3D::normal.to_img_8bit");
+              return rgba.to_img_8bit(rgba.shape, p_node->cfg().cm_cpu, flip_y);
+            }();
 
             if (this->p_renderer)
+            {
+              HSD_PROFILE_ZONE("Viewer3D::normal.renderer_call");
               this->p_renderer->set_texture(qtr::keys::tex::normal, img, rgba.shape.x);
+            }
           }))
   {
     this->p_renderer->reset_texture(qtr::keys::tex::normal);
@@ -554,6 +620,7 @@ void Viewer3D::update_renderer()
           typeid(hmap::Cloud),
           [this](const hmap::Cloud &c)
           {
+            HSD_PROFILE_ZONE("Viewer3D::points.prepare_and_submit");
             if (this->p_renderer)
               qtr::set_points(*p_renderer, c.get_x(), c.get_y(), c.get_values());
           }))
@@ -568,6 +635,7 @@ void Viewer3D::update_renderer()
           typeid(hmap::Path),
           [this](const hmap::Path &c)
           {
+            HSD_PROFILE_ZONE("Viewer3D::path.prepare_and_submit");
             if (this->p_renderer)
               qtr::set_path(*p_renderer, c.get_x(), c.get_y(), c.get_values());
           }))
@@ -582,6 +650,7 @@ void Viewer3D::update_renderer()
           typeid(hmap::Forest),
           [this](const hmap::Forest &f)
           {
+            HSD_PROFILE_ZONE("Viewer3D::trees.prepare_and_submit");
             if (this->p_renderer)
             {
               QColor    qc(104, 159, 56, 255);
@@ -606,6 +675,7 @@ void Viewer3D::update_renderer()
           typeid(hmap::RockField),
           [this](const hmap::RockField &r)
           {
+            HSD_PROFILE_ZONE("Viewer3D::rocks.prepare_and_submit");
             if (this->p_renderer)
             {
               QColor    qc(80, 80, 80, 255);

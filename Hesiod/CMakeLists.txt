@@ -186,6 +186,10 @@ if(HESIOD_ENABLE_TESTS)
     graph_editor PROPERTIES WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
                             ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+  # Explicit desktop workload; requires a real OpenGL display, not offscreen CTest.
+  add_executable(profile_viewer ${CMAKE_SOURCE_DIR}/tests/gui/profile_viewer.cpp)
+  target_link_libraries(profile_viewer PRIVATE hesiod_core Qt6::Test)
+
   add_executable(test_autosave ${CMAKE_SOURCE_DIR}/tests/gui/test_autosave.cpp)
   add_dependencies(test_autosave test_model_headers)
   target_link_libraries(test_autosave PRIVATE hesiod_core Qt6::Test)

@@ -1,6 +1,8 @@
 /* Copyright (c) 2023 Otto Link. Distributed under the terms of the GNU General
  * Public License. The full license is in the file LICENSE, distributed with
  * this software. */
+#include <format>
+
 #include <stdexcept>
 #include <typeinfo>
 
@@ -19,6 +21,7 @@
 #include "hesiod/gui/widgets/data_preview.hpp"
 #include "hesiod/gui/widgets/menu_chrome.hpp"
 #include "hesiod/logger.hpp"
+#include "hesiod/profiling.hpp"
 
 namespace hesiod
 {
@@ -58,6 +61,7 @@ DataPreview::DataPreview(std::weak_ptr<BaseNode> model, QWidget *parent)
 
 void DataPreview::clear_preview()
 {
+  HSD_PROFILE_ZONE("DataPreview::clear_preview");
   AppContext &ctx = HSD_CTX;
   const auto  shape = glm::ivec2(ctx.app_settings.node_editor.preview_w,
                                 ctx.app_settings.node_editor.preview_h);
@@ -72,6 +76,7 @@ void DataPreview::clear_preview()
 
 void DataPreview::dim_preview()
 {
+  HSD_PROFILE_ZONE("DataPreview::dim_preview");
   if (this->preview_pixmap.isNull())
     return;
 
@@ -154,6 +159,7 @@ const QPixmap &DataPreview::get_preview_pixmap() const { return this->preview_pi
 
 void DataPreview::update_preview()
 {
+  HSD_PROFILE_ZONE("DataPreview::update_preview");
   auto p_model = this->model.lock();
   if (!p_model)
   {
@@ -176,6 +182,16 @@ void DataPreview::update_preview()
 
   shape.y = static_cast<int>(shape.x / aspect_ratio);
 
+  HSD_PROFILE_TEXT(
+      std::format("type={} node={} port={} source={}x{} preview={}x{} mode={}",
+                  p_model->get_node_type(),
+                  p_model->get_id(),
+                  preview_port_index,
+                  data_shape.x,
+                  data_shape.y,
+                  shape.x,
+                  shape.y,
+                  static_cast<int>(preview_type)));
   Logger::log()->trace("DataPreview::update_preview, data_type: {}", data_type);
 
   QImage::Format       img_format = QImage::Format_Grayscale8;
@@ -191,6 +207,7 @@ void DataPreview::update_preview()
 
   if (blind_ptr)
   {
+    HSD_PROFILE_ZONE("DataPreview::prepare_image");
     // ---- Heightmap or Array ----
     if (data_type == typeid(hmap::VirtualArray).name() ||
         data_type == typeid(hmap::Array).name())
@@ -203,6 +220,7 @@ void DataPreview::update_preview()
             blind_ptr);
         if (p_va)
         {
+          HSD_PROFILE_ZONE("DataPreview::to_array");
           array = p_va->to_array(shape, p_model->cfg().cm_cpu);
         }
         else
@@ -212,33 +230,39 @@ void DataPreview::update_preview()
       {
         const hmap::Array *p_a = static_cast<const hmap::Array *>(blind_ptr);
         if (p_a)
+        {
+          HSD_PROFILE_ZONE("DataPreview::resample_array");
           array = p_a->resample_to_shape_nearest(shape);
+        }
         else
           Logger::log()->error("DataPreview::update_preview: Array nullptr");
       }
 
-      switch (preview_type)
       {
-      case PreviewType::GRAYSCALE:
-        img = hmap::colorize_grayscale(array).to_img_8bit();
-        img_format = QImage::Format_Grayscale8;
-        break;
-      case PreviewType::MAGMA:
-        img = build_colored_array(array, hmap::Cmap::MAGMA);
-        img_format = QImage::Format_RGB888;
-        break;
-      case PreviewType::TERRAIN:
-        img = build_colored_array(array, hmap::Cmap::TERRAIN);
-        img_format = QImage::Format_RGB888;
-        break;
-      case PreviewType::HISTOGRAM:
-        img = hmap::colorize_histogram(array).to_img_8bit();
-        img_format = QImage::Format_Grayscale8;
-        break;
-      case PreviewType::SLOPE_ELEVATION_HEATMAP:
-        img = hmap::colorize_slope_height_heatmap(array, hmap::Cmap::HOT).to_img_8bit();
-        img_format = QImage::Format_RGB888;
-        break;
+        HSD_PROFILE_ZONE("DataPreview::colorize");
+        switch (preview_type)
+        {
+        case PreviewType::GRAYSCALE:
+          img = hmap::colorize_grayscale(array).to_img_8bit();
+          img_format = QImage::Format_Grayscale8;
+          break;
+        case PreviewType::MAGMA:
+          img = build_colored_array(array, hmap::Cmap::MAGMA);
+          img_format = QImage::Format_RGB888;
+          break;
+        case PreviewType::TERRAIN:
+          img = build_colored_array(array, hmap::Cmap::TERRAIN);
+          img_format = QImage::Format_RGB888;
+          break;
+        case PreviewType::HISTOGRAM:
+          img = hmap::colorize_histogram(array).to_img_8bit();
+          img_format = QImage::Format_Grayscale8;
+          break;
+        case PreviewType::SLOPE_ELEVATION_HEATMAP:
+          img = hmap::colorize_slope_height_heatmap(array, hmap::Cmap::HOT).to_img_8bit();
+          img_format = QImage::Format_RGB888;
+          break;
+        }
       }
     }
     // ---- Texture ----
@@ -248,6 +272,7 @@ void DataPreview::update_preview()
           blind_ptr);
       if (p_h)
       {
+        HSD_PROFILE_ZONE("DataPreview::texture_to_image");
         img = p_h->to_img_8bit(shape, p_model->cfg().cm_cpu);
         img_format = QImage::Format_RGBA8888;
       }
@@ -315,41 +340,45 @@ void DataPreview::update_preview()
 
   QImage image;
 
-  if (!img.empty())
   {
-    size_t nchannels = (img_format == QImage::Format_Grayscale8) ? 1
-                       : (img_format == QImage::Format_RGB888)   ? 3
-                                                                 : 4;
-
-    if (img.size() != shape.x * shape.y * nchannels)
+    HSD_PROFILE_ZONE("DataPreview::copy_image");
+    if (!img.empty())
     {
-      Logger::log()->critical(
-          "DataPreview::update_preview: inconsistent image buffer size");
-      throw std::runtime_error("DataPreview::update_preview: inconsistent buffer size");
+      size_t nchannels = (img_format == QImage::Format_Grayscale8) ? 1
+                         : (img_format == QImage::Format_RGB888)   ? 3
+                                                                   : 4;
+
+      if (img.size() != shape.x * shape.y * nchannels)
+      {
+        Logger::log()->critical(
+            "DataPreview::update_preview: inconsistent image buffer size");
+        throw std::runtime_error("DataPreview::update_preview: inconsistent buffer size");
+      }
+
+      // Copy buffer to QImage that owns its data
+      image = QImage(shape.x, shape.y, img_format);
+      std::memcpy(image.bits(), img.data(), img.size());
     }
-
-    // Copy buffer to QImage that owns its data
-    image = QImage(shape.x, shape.y, img_format);
-    std::memcpy(image.bits(), img.data(), img.size());
+    else
+    {
+      image = QImage(shape.x, shape.y, img_format);
+      image.fill(Qt::transparent);
+    }
   }
-  else
   {
-    image = QImage(shape.x, shape.y, img_format);
-    image.fill(Qt::transparent);
+    HSD_PROFILE_ZONE("DataPreview::pixmap_and_border");
+    image = image.mirrored(false, true); // (horizontal, vertical)
+
+    // ---- Draw border ----
+    preview_pixmap = QPixmap::fromImage(image);
+    {
+      QPainter painter(&preview_pixmap);
+      QPen     pen(Qt::black);
+      pen.setWidth(1);
+      painter.setPen(pen);
+      painter.drawRect(0, 0, preview_pixmap.width() - 1, preview_pixmap.height() - 1);
+    }
   }
-
-  image = image.mirrored(false, true); // (horizontal, vertical)
-
-  // ---- Draw border ----
-  preview_pixmap = QPixmap::fromImage(image);
-  {
-    QPainter painter(&preview_pixmap);
-    QPen     pen(Qt::black);
-    pen.setWidth(1);
-    painter.setPen(pen);
-    painter.drawRect(0, 0, preview_pixmap.width() - 1, preview_pixmap.height() - 1);
-  }
-
   this->setPixmap(this->preview_pixmap);
   this->update();
 }

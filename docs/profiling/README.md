@@ -234,3 +234,10 @@ BlenderBridge needs a receiver; ForestProcess/RocksProcess/RocksToHeightmap need
 Forest/RockField input generators; ExportForest/ExportRocks/SeedForest/
 TerrainTexture lack catalogue documentation. These are fixture-generation counts,
 not successful runtime measurements. The Day 1 counts remain unchanged.
+
+## Viewer and thumbnail preparation
+
+[Viewer profiling](viewer-workload.md) describes the nested GUI preparation zones,
+their asynchronous boundaries, and an explicit desktop workload for selection,
+parameter changes and camera movement. Keep these captures separate from the
+headless node baseline; renderer calls are not GPU kernel/frame timings.
