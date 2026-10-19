@@ -139,10 +139,13 @@ def make_manifest(catalog):
         node = row['node']
         case = {'name': node, 'target': node, 'queue': row['queue'],
                 'category': row['category'], 'source': row['source'],
-                'group': group_for(catalog, node),
+                'group': None,
                 'scope': 'backend_dispatch_only' if node == 'Preview' else 'one_synthetic_fixture',
                 'status': 'ready'}
         try:
+            if node not in catalog:
+                raise ValueError('Node documentation missing; requires a reviewed fixture')
+            case['group'] = group_for(catalog, node)
             if node in BLOCKED:
                 raise ValueError(BLOCKED[node])
             graph, node_id = build_fixture(catalog, node)

@@ -27,6 +27,15 @@ class OvernightTests(unittest.TestCase):
         self.assertEqual(len(active), len(self.cases))
         self.assertTrue(all(c['status'] == 'ready' or c.get('reason') for c in self.cases))
 
+    def test_missing_documentation_is_explicitly_unmeasured(self):
+        catalog = dict(self.catalog)
+        catalog.pop('Abs')
+        cases, fixtures = make_manifest(catalog)
+        case = next(c for c in cases if c['name'] == 'Abs')
+        self.assertEqual(case['status'], 'needs_fixture')
+        self.assertIn('documentation missing', case['reason'])
+        self.assertNotIn('Abs', fixtures)
+
     def test_generated_links_have_matching_declared_types(self):
         for name, project in self.fixtures.items():
             self.assertFalse(project['graph_manager']['export_param']['export_path'])

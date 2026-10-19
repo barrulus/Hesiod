@@ -54,7 +54,9 @@ class AssessmentTests(unittest.TestCase):
         self.assertIn('FBM', nodes['CoherentNoise']['groups'])
         self.assertEqual(nodes['DistanceTransform']['queue'], 'full_array')
         self.assertEqual(nodes['Abs']['queue'], 'configurable_tiles')
-        self.assertEqual(nodes['Noise']['queue'], 'legacy')
+        for node in nodes.values():
+            if 'DEPRECATED' in node['category']:
+                self.assertEqual(node['queue'], 'legacy')
 
     def test_fixtures_have_only_source_and_target_and_no_exports(self):
         manifest = json.loads((ROOT / 'scripts/profiling/pilot.json').read_text())
